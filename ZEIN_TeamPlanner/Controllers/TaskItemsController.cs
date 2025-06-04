@@ -14,10 +14,10 @@ namespace ZEIN_TeamPlanner.Controllers
         }
         public async Task<IActionResult> Index()
         {
-            var  tasks = await _context.TaskItems            
+            var task = await _context.TaskItems
                 .Include(t => t.AssignedToUser)
-                .ToListAsync();
-            return View(tasks);
+                .ToArrayAsync();
+            return View(task);
         }
     }
 }

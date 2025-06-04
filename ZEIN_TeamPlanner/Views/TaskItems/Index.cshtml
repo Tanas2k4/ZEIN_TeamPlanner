@@ -1,0 +1,38 @@
+﻿@model IEnumerable<ZEIN_TeamPlanner.Models.TaskItem>
+
+@{
+    ViewData["Title"] = "Danh sách Task";
+}
+
+<h2>Danh sách Task</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Tiêu đề</th>
+            <th>Trạng thái</th>
+            <th>Người được giao</th>
+            <th>Hạn chót</th>
+        </tr>   
+    </thead>
+    <tbody>
+        @foreach (var task in Model)
+        {
+            <tr>
+                <td>@task.Title</td>
+                <td>@task.Status</td>
+                <td>
+                    @if (task.AssignedToUser != null)
+                    {
+                        @task.AssignedToUser.FullName
+                    }
+                    else
+                    {
+                        <span class="text-muted"><i>Chưa gán</i></span>
+                    }
+                </td>
+                <td>@task.Deadline?.ToString("dd/MM/yyyy")</td>
+            </tr>
+        }
+    </tbody>
+</table>

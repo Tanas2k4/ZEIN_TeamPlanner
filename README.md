@@ -1,6 +1,8 @@
 # ZEIN TEAM PLANNER
 
 **ZEIN Team Planner** là một ứng dụng quản lý công việc nhóm hiện đại, được xây dựng bằng **ASP.NET Core MVC**. Ứng dụng giúp các nhóm làm việc cộng tác hiệu quả hơn bằng cách theo dõi, phân công và giám sát tiến độ các tác vụ một cách trực quan và dễ sử dụng.
+![image](https://github.com/user-attachments/assets/268724e1-3e3f-4630-a22e-2ccfed789802)
+
 
 ---
 

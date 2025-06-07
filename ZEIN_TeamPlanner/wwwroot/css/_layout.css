@@ -3,6 +3,7 @@
     background-color: #f5f6fa;
 }
 
+/* Sidebar */
 .sidebar {
     width: 250px;
     height: 100vh;
@@ -13,28 +14,83 @@
 }
 
     .sidebar .nav-link {
-        color: #333;
-        padding: 10px;
+        color: black;
+        transition: all 0.3s ease;
     }
 
         .sidebar .nav-link.active {
-            color: #fff;
-            background-color: #6366f1;
-            border-radius: 5px;
+            color: white;
+            background-color: #00AE72;
+            border-radius: 10px;
         }
 
+/* Main Content */
 .main-content {
     margin-left: 250px;
     padding: 20px;
 }
 
+/* Topbar */
 .topbar {
     background: #fff;
     padding: 10px 20px;
     border-bottom: 1px solid #ddd;
+    border-radius: 10px;
 }
 
-.nav-link.active {
-    background-color: #00AE72 !important;
-    color: white !important;
+/* Icon Button */
+.custom-icon-btn {
+    padding: 5px 15px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+    .custom-icon-btn i {
+        color: black;
+        font-size: 1.5rem;
+        transition: color 0.3s ease;
+    }
+
+    .custom-icon-btn:hover {
+        background-color: rgba(0, 174, 114, 0.1);
+    }
+
+        .custom-icon-btn:hover i {
+            color: #00AE72;
+        }
+
+    .custom-icon-btn:active {
+        background-color: rgba(0, 174, 114, 0.2);
+    }
+
+        .custom-icon-btn:active i {
+            color: #00AE72;
+        }
+
+/* Navigation Button Group */
+.btn-group .btn {
+    color: black;
+    background-color: transparent;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+    .btn-group .btn i {
+        color: black;
+    }
+
+    .btn-group .btn.active,
+    .btn-group .btn:hover {
+        background-color: rgba(0, 174, 114, 0.1);
+        color: #00AE72;
+    }
+
+        .btn-group .btn.active i,
+        .btn-group .btn:hover i {
+            color: #00AE72;
+        }
+
+/* Icon Group Spacing */
+.icon-group {
+    gap: 15px;
 }

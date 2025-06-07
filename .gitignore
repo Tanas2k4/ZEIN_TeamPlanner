@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+## Folder Update Regularly
+/ZEIN_TeamPlanner/Migrations/
+
 # User-specific files
 *.rsuser
 *.suo

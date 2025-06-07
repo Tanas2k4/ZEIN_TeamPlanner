@@ -164,17 +164,13 @@ namespace ZEIN_TeamPlanner.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("Age")
-                        .HasColumnType("int");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("CreateAT")
+                    b.Property<DateTime>("CreateAT")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("DateOfBirth")

@@ -62,6 +62,21 @@
         box-shadow: 0 5px 15px rgba(0, 174, 114, 0.3);
     }
 
+.form-check-input {
+    border: 1px solid #00AE72; /* Viền màu #00AE72 */
+    transition: all 0.3s ease;
+}
+
+    .form-check-input:checked {
+        background-color: #00AE72; /* Màu nền khi được chọn */
+        border-color: #00AE72; /* Viền khi được chọn */
+    }
+
+    .form-check-input:focus {
+        box-shadow: 0 0 5px rgba(0, 174, 114, 0.3); /* Hiệu ứng focus */
+        border-color: #008f5d; /* Viền đậm hơn khi focus */
+    }
+
 .login-link {
     color: #00AE72;
     text-decoration: none;

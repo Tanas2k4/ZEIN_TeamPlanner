@@ -11,15 +11,15 @@
     <link rel="icon" type="image/x-icon" href="~/zeinIcon.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
-    <link href="~/css/_layout.css" rel="stylesheet" />
+    <link href="~/css/_layout.css?v=@DateTime.Now.Ticks" rel="stylesheet" /> 
 </head>
 <body>
     <!-- Sidebar -->
-    <div class="sidebar p-3">
-        <h4 class="mb-4">ZEIN Planner</h4>
-        <div class="mb-4">
+    <div class="sidebar p-3 animate__animated animate__fadeInLeft">
+        <h4 class="mb-4 text-gradient" href="#">ZEIN Planner</h4>
+        <div class="mb-4 user-profile animate__animated animate__pulse animate__delay-1s">
             <div class="d-flex align-items-center">
-                <img src="https://i.pravatar.cc/40" class="rounded-circle me-2" />
+                <img src="https://i.pravatar.cc/40" class="rounded-circle me-2 shadow-sm" />
                 <div>
                     <strong>skibidi</strong><br />
                     <small class="text-muted">Pyongyang, North Korea</small>
@@ -27,49 +27,49 @@
             </div>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link @(currentController == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index">
-                <i class="bi bi-grid"></i> Dashboard
+            <a class="nav-link @(currentController == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index" data-bs-toggle="tooltip" title="Go to Dashboard">
+                <i class="bi bi-grid me-2"></i> Dashboard
             </a>
-            <a class="nav-link @(currentController == "Massages" ? "active" : "")" asp-controller="Massages" asp-action="Index">
-                <i class="bi bi-chat-dots"></i> Messages
+            <a class="nav-link @(currentController == "Massages" ? "active" : "")" asp-controller="Massages" asp-action="Index" data-bs-toggle="tooltip" title="View Messages">
+                <i class="bi bi-chat-dots me-2"></i> Messages
             </a>
-            <a class="nav-link @(currentController == "TaskItems" ? "active" : "")" asp-controller="TaskItems" asp-action="Index">
-                <i class="bi bi-list-task"></i> Tasks
+            <a class="nav-link @(currentController == "TaskItems" ? "active" : "")" asp-controller="TaskItems" asp-action="Index" data-bs-toggle="tooltip" title="Manage Tasks">
+                <i class="bi bi-list-task me-2"></i> Tasks
             </a>
-            <a class="nav-link @(currentController == "Group" ? "active" : "")" asp-controller="Group" asp-action="Index">
-                <i class="bi bi-people"></i> Members
+            <a class="nav-link @(currentController == "Group" ? "active" : "")" asp-controller="Group" asp-action="Index" data-bs-toggle="tooltip" title="View Members">
+                <i class="bi bi-people me-2"></i> Members
             </a>
-            <a class="nav-link @(currentController == "Setting" ? "active" : "")" asp-controller="Setting" asp-action="Index">
-                <i class="bi bi-gear"></i> Settings
+            <a class="nav-link @(currentController == "Setting" ? "active" : "")" asp-controller="Setting" asp-action="Index" data-bs-toggle="tooltip" title="Adjust Settings">
+                <i class="bi bi-gear me-2"></i> Settings
             </a>
         </nav>
     </div>
 
     <!-- Main content -->
-    <div class="main-content">
+    <div class="main-content animate__animated animate__fadeIn">
         <!-- Topbar -->
-        <div class="topbar d-flex justify-content-between align-items-center">
+        <div class="topbar d-flex justify-content-between align-items-center shadow-sm">
             <div class="btn-group" role="group" aria-label="Navigation group">
                 <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "TaskItems" ? "active" : "")" style="border: none;" asp-controller="TaskItems" asp-action="Index">
                     <i class="bi bi-list-task me-1"></i> Tasks
                 </a>
-                <a class="btn btn-outline-dark d-flex align-items-center" style="border: none;" asp-controller="Group" asp-action="Index">
+                <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Group" ? "active" : "")" style="border: none;" asp-controller="Group" asp-action="Index">
                     <i class="bi bi-grid me-1"></i> Projects
                 </a>
-                <a class="btn btn-outline-dark d-flex align-items-center" style="border: none;" asp-controller="Report" asp-action="Index">
+                <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Report" ? "active" : "")" style="border: none;" asp-controller="Report" asp-action="Index">
                     <i class="bi bi-bar-chart me-1"></i> Reports
                 </a>
             </div>
 
             <form class="d-flex" role="search" style="max-width: 300px;">
-                <input class="form-control me-2" style="opacity: 60%; border: 1px solid" type="search" placeholder="Search for anything..." aria-label="Search" />
+                <input class="form-control me-2 search-input animate__animated animate__fadeInRight" style="border: 1px solid #ddd; transition: all 0.3s ease;" type="search" placeholder="Search for anything..." aria-label="Search" />
             </form>
 
             <div class="icon-group d-flex align-items-center gap-3">
-                <a href="#" class="custom-icon-btn"><i class="bi bi-calendar2-week"></i></a>
-                <a href="#" class="custom-icon-btn"><i class="bi bi-question-circle-fill"></i></a>
-                <a href="#" class="custom-icon-btn"><i class="bi bi-bell-fill"></i></a>
-                <a class="btn text-white" style="background-color: #00AE72;" asp-controller="TaskItems" asp-action="Create">
+                <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Calendar"><i class="bi bi-calendar2-week"></i></a>
+                <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Help"><i class="bi bi-question-circle-fill"></i></a>
+                <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Notifications"><i class="bi bi-bell-fill"></i></a>
+                <a class="btn text-white animate__animated animate__pulse animate__infinite" style="background-color: #00AE72;" asp-controller="TaskItems" asp-action="Create">
                     <i class="bi bi-plus-lg"></i> Add Project
                 </a>
             </div>
@@ -82,6 +82,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize Bootstrap tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    </script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

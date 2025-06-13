@@ -65,7 +65,7 @@
 
 /* Icon Button */
 .custom-icon-btn {
-    padding: 8px;
+    padding: 6px 13px;
     border-radius: 50%;
     transition: all 0.3s ease;
     position: relative;
@@ -117,10 +117,13 @@
         }
 
 /* Search Input */
+.search-input {
+    border: 1px solid #ddd; !important;
+}
 .search-input:focus {
     border-color: #00AE72 !important;
     box-shadow: 0 0 5px rgba(0, 174, 114, 0.3);
-    opacity: 1 !important;
+    opacity: 0.5 !important;
 }
 
 /* Icon Group Spacing */

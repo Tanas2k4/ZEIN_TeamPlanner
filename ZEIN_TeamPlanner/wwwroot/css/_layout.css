@@ -1,58 +1,85 @@
 ﻿body {
     font-family: 'Segoe UI', sans-serif;
-    background-color: #f5f6fa;
+    background: linear-gradient(135deg, #e0e7ff, #f5f6fa);
+    overflow-x: hidden;
 }
 
 /* Sidebar */
 .sidebar {
     width: 250px;
     height: 100vh;
-    background-color: #fff;
+    background: linear-gradient(to bottom, #ffffff, #f0f4f8);
     border-right: 1px solid #ddd;
     position: fixed;
     z-index: 1000;
+    transition: all 0.3s ease;
 }
 
+    .sidebar:hover {
+        width: 260px;
+        box-shadow: 3px 0 10px rgba(0, 0, 0, 0.1);
+    }
+
     .sidebar .nav-link {
-        color: black;
+        color: #333;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin: 5px 0;
         transition: all 0.3s ease;
     }
 
         .sidebar .nav-link.active {
             color: white;
-            background-color: #00AE72;
-            border-radius: 10px;
+            background: linear-gradient(to right, #00AE72, #00c4b4);
+            border-radius: 8px;
+            transform: scale(1.02);
         }
+
+        .sidebar .nav-link:hover {
+            background: rgba(0, 174, 114, 0.1);
+            color: #00AE72;
+            transform: translateX(5px);
+        }
+
+.text-gradient {
+    background: linear-gradient(to right, #00AE72, #00c4b4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
 /* Main Content */
 .main-content {
     margin-left: 250px;
     padding: 20px;
+    transition: all 0.5s ease;
 }
 
 /* Topbar */
 .topbar {
-    background: #fff;
-    padding: 10px 20px;
-    border-bottom: 1px solid #ddd;
-    border-radius: 10px;
+    background: linear-gradient(to right, #ffffff, #f8fafc);
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
 }
 
 /* Icon Button */
 .custom-icon-btn {
-    padding: 5px 15px;
+    padding: 8px;
     border-radius: 50%;
     transition: all 0.3s ease;
+    position: relative;
 }
 
     .custom-icon-btn i {
-        color: black;
+        color: #333;
         font-size: 1.5rem;
-        transition: color 0.3s ease;
+        transition: all 0.3s ease;
     }
 
     .custom-icon-btn:hover {
-        background-color: rgba(0, 174, 114, 0.1);
+        background: rgba(0, 174, 114, 0.1);
+        transform: scale(1.1);
     }
 
         .custom-icon-btn:hover i {
@@ -60,29 +87,28 @@
         }
 
     .custom-icon-btn:active {
-        background-color: rgba(0, 174, 114, 0.2);
+        background: rgba(0, 174, 114, 0.2);
+        transform: scale(0.95);
     }
-
-        .custom-icon-btn:active i {
-            color: #00AE72;
-        }
 
 /* Navigation Button Group */
 .btn-group .btn {
-    color: black;
-    background-color: transparent;
+    color: #333;
+    background: transparent;
+    padding: 8px 15px;
+    border-radius: 8px;
     transition: all 0.3s ease;
-    border: none;
 }
 
     .btn-group .btn i {
-        color: black;
+        color: #333;
     }
 
     .btn-group .btn.active,
     .btn-group .btn:hover {
-        background-color: rgba(0, 174, 114, 0.1);
+        background: rgba(0, 174, 114, 0.1);
         color: #00AE72;
+        transform: scale(1.02);
     }
 
         .btn-group .btn.active i,
@@ -90,7 +116,42 @@
             color: #00AE72;
         }
 
+/* Search Input */
+.search-input:focus {
+    border-color: #00AE72 !important;
+    box-shadow: 0 0 5px rgba(0, 174, 114, 0.3);
+    opacity: 1 !important;
+}
+
 /* Icon Group Spacing */
 .icon-group {
     gap: 15px;
+}
+
+/* Animation for Add Project button */
+@keyframes pulse-glow {
+    0% {
+        box-shadow: 0 0 5px rgba(0, 174, 114, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 15px rgba(0, 174, 114, 0.6);
+    }
+
+    100% {
+        box-shadow: 0 0 5px rgba(0, 174, 114, 0.4);
+    }
+}
+
+.btn.text-white {
+    animation: pulse-glow 2s infinite;
+}
+
+/* User Profile */
+.user-profile img {
+    transition: transform 0.3s ease;
+}
+
+.user-profile:hover img {
+    transform: scale(1.1);
 }

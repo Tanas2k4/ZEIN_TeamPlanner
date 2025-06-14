@@ -29,7 +29,8 @@ namespace ZEIN_TeamPlanner.Models
         // Đặt giá trị mặc định cho CreateAT
         [Required]
         public DateTime CreateAT { get; set; } = DateTime.UtcNow;
-
+        // lưu đường dẫn avatar
+        public string AvatarUrl { get; set; } = "/images/default-avatar.png"; 
         public ICollection<GroupMember> GroupMemberships { get; set; }
         public ICollection<TaskItem> AssignedTasks { get; set; }
     }

@@ -13,6 +13,7 @@
     position: fixed;
     z-index: 1000;
     transition: all 0.3s ease;
+    overflow-x: hidden; /* Prevent horizontal overflow */
 }
 
     .sidebar:hover {
@@ -151,10 +152,85 @@
 }
 
 /* User Profile */
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 200px; /* Reduced from 230px to fit within 250px sidebar with padding */
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(0, 174, 114, 0.05);
+    transition: background 0.3s ease;
+}
+
+.user-profile:hover {
+    background: rgba(0, 174, 114, 0.1);
+}
+
+.user-profile div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Allow the container to shrink */
+    flex-grow: 1; /* Allow text to fill available space */
+}
+
+
 .user-profile img {
     transition: transform 0.3s ease;
 }
 
 .user-profile:hover img {
     transform: scale(1.1);
+}
+.user-profile .d-flex {
+    align-items: center; 
+    gap: 10px; /* Consistent space between avatar and text */
+    padding: 5px 0; /* Add vertical padding for better spacing */
+}
+
+.user-profile p {
+    margin: 0;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Truncate with ellipsis */
+    white-space: nowrap; /* Prevent wrapping */
+    max-width: 140px; /* Reduced from 150px to fit better */
+}
+
+.avatar {
+    width: 40px; 
+    height: 40px; 
+    border-radius: 50%; 
+    object-fit: cover; 
+    transition: transform 0.3s ease; 
+    vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+
+        .sidebar:hover {
+            width: 210px;
+        }
+
+    .avatar {
+        width: 32px;
+        height: 32px;
+    }
+
+    .user-profile {
+        max-width: 160px; /* Adjusted for mobile */
+        gap: 8px;
+    }
+
+        .user-profile p {
+            max-width: 110px; /* Reduced for mobile */
+            font-size: 0.8rem;
+        }
+
+    .main-content {
+        margin-left: 200px;
+    }
 }

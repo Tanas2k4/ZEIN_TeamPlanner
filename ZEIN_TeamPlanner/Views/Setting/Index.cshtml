@@ -1,9 +1,154 @@
-﻿
+﻿@model ZEIN_TeamPlanner.Controllers.SettingsViewModel
+
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Settings";
 }
 
-<h1>Index</h1>
+<!-- Custom CSS for Settings Page -->
+<style>
+    .settings-container {
+        width: 100%;
+        padding: 20px 15px;
+        background: #f8fafc;
+    }
+
+    .settings-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .avatar-preview {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border: 4px solid #00AE72;
+        border-radius: 50%;
+        margin: 0 auto 15px;
+        display: block;
+    }
+
+    .settings-categories {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 15px;
+    }
+
+    .settings-category {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #fff;
+        border-left: 4px solid #00AE72;
+        width: 100%;
+    }
+
+        .settings-category h4 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+    .form-label {
+        font-weight: 500;
+        color: #555;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        border-color: #ddd;
+    }
+
+    .form-check {
+        margin-bottom: 10px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(to right, #00AE72, #00c4b4);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, #00c4b4, #00AE72);
+            transform: scale(1.05);
+        }
+
+    .logout-btn {
+        background: #dc3545;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        color: white;
+        transition: all 0.3s ease;
+    }
+
+        .logout-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+    .theme-dark .settings-container {
+        background: #333;
+        color: #fff;
+    }
+
+    .theme-dark .settings-category {
+        background: #444;
+    }
+
+    .theme-dark .form-label, .theme-dark .form-check-label {
+        color: #ddd;
+    }
+
+    .theme-dark .form-control, .theme-dark .form-select {
+        background: #555;
+        color: #fff;
+        border-color: #666;
+    }
+</style>
+
+<!-- JavaScript for Theme Toggle and Avatar Preview -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const themeSelect = document.querySelector('select[name="Theme"]');
+        const body = document.body;
+        const avatarInput = document.querySelector('input[name="avatar"]');
+        const avatarPreview = document.querySelector('.avatar-preview');
+
+        // Apply saved theme
+        if (themeSelect.value === 'Dark') {
+            body.classList.add('theme-dark');
+            body.classList.remove('theme-light');
+        } else {
+            body.classList.add('theme-light');
+            body.classList.remove('theme-dark');
+        }
+
+        // Update theme on change
+        themeSelect.addEventListener('change', function () {
+            if (this.value === 'Dark') {
+                body.classList.add('theme-dark');
+                body.classList.remove('theme-light');
+            } else {
+                body.classList.add('theme-light');
+                body.classList.remove('theme-dark');
+            }
+        });
+
+        // Real-time avatar preview
+        avatarInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    avatarPreview.src = event.target.result; // Set preview to data URL
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+</script>
 
 <div class="settings-container">
     <div class="settings-header text-center mb-4">
@@ -70,12 +215,11 @@
             </div>
         </div>
     </div>
-    
-    </form>
     <div class="d-flex justify-content-between mt-4">
         <button type="submit" class="btn btn-primary">Save Changes</button>
         <form asp-area="Identity" asp-page="/Account/Logout" method="post" style="display:inline;">
             <button type="submit" class="logout-btn">Logout</button>
         </form>
     </div>
+    </form>
 </div>

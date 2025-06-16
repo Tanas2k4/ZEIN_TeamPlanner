@@ -59,6 +59,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
-app.MapRazorPages(); // Phải có để sử dụng Identity UI
+
+app.MapRazorPages();
 
 app.Run();

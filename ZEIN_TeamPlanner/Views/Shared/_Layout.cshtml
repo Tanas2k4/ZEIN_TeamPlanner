@@ -18,6 +18,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="~/css/_layout.css?v=@DateTime.Now.Ticks" rel="stylesheet" />
+    <!-- Thêm jQuery cho AJAX -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <!-- Sidebar -->
@@ -32,7 +34,7 @@
                     {
                         <img src="@user.AvatarUrl" alt="User Avatar" class="avatar" />
                         <div>
-                            <p><strong>@user.FullName</strong> </p>
+                            <p><strong>@user.FullName</strong></p>
                             <p>@user.Email</p>
                         </div>
                     }
@@ -77,7 +79,7 @@
                 <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "TaskItems" ? "active" : "")" style="border: none;" asp-controller="TaskItems" asp-action="Index">
                     <i class="bi bi-list-task me-1"></i> Tasks
                 </a>
-                <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Group" ? "active" : "")" style="border: none;" asp-controller="Group" asp-action="Index">
+                <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Project" ? "active" : "")" style="border: none;" asp-controller="Project" asp-action="Index">
                     <i class="bi bi-grid me-1"></i> Projects
                 </a>
                 <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Report" ? "active" : "")" style="border: none;" asp-controller="Report" asp-action="Index">
@@ -93,7 +95,7 @@
                 <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Calendar"><i class="bi bi-calendar2-week"></i></a>
                 <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Help"><i class="bi bi-question-circle-fill"></i></a>
                 <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Notifications"><i class="bi bi-bell-fill"></i></a>
-                <a class="btn text-white animate__animated animate__pulse animate__infinite" style="background-color: #00AE72;" asp-controller="TaskItems" asp-action="Create">
+                <a class="btn text-white animate__animated animate__pulse animate__infinite" style="background-color: #00AE72;" asp-controller="Project" asp-action="Create">
                     <i class="bi bi-plus-lg"></i> Add Project
                 </a>
             </div>
@@ -105,9 +107,14 @@
         </main>
     </div>
 
+    <!-- Form chứa AntiForgeryToken cho AJAX -->
+    <form id="antiForgeryForm">
+        @Html.AntiForgeryToken()
+    </form>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Initialize Bootstrap tooltips
+        // Khởi tạo Bootstrap tooltips
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
         const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
     </script>

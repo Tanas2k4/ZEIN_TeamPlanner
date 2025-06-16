@@ -1,0 +1,250 @@
+﻿@model ZEIN_TeamPlanner.Models.Group
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ZEIN_TeamPlanner.Models.ApplicationUser> UserManager
+@{
+    ViewData["Title"] = "Chi tiết dự án";
+    // Lấy ID người dùng hiện tại và kiểm tra quyền Admin
+    var userId = UserManager.GetUserId(User);
+    var isAdmin = Model.Members.Any(m => m.UserId == userId && m.Role == ZEIN_TeamPlanner.Models.MemberRole.Admin) || Model.CreatedByUserId == userId;
+}
+
+<!-- Tiêu đề trang -->
+<h2>Chi tiết dự án: @Model.GroupName</h2>
+
+<!-- Hiển thị lỗi ModelState nếu có -->
+@if (ViewData.ModelState.Any(x => x.Value.Errors.Any()))
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<!-- Thông tin dự án -->
+<div class="card">
+    <div class="card-header">
+        <h4>Thông tin dự án</h4>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Tên dự án</dt>
+            <dd class="col-sm-9">@Model.GroupName</dd>
+            <dt class="col-sm-3">Mô tả</dt>
+            <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.Description) ? "Không có mô tả" : Model.Description)</dd>
+            <dt class="col-sm-3">Ngày tạo</dt>
+            <dd class="col-sm-9">@Model.CreateAt.ToString("dd/MM/yyyy HH:mm")</dd>
+            <dt class="col-sm-3">Người tạo</dt>
+            <dd class="col-sm-9">@(Model.CreatedByUser?.FullName ?? "Không xác định")</dd>
+        </dl>
+    </div>
+</div>
+
+<!-- Danh sách thành viên -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h4>Danh sách thành viên</h4>
+    </div>
+    <div class="card-body">
+        @if (Model.Members != null && Model.Members.Any())
+        {
+            <table class="table table-bordered" id="membersTable">
+                <thead>
+                    <tr>
+                        <th>Họ tên</th>
+                        <th>Email</th>
+                        <th>Vai trò</th>
+                        <th>Ngày tham gia</th>
+                        @if (isAdmin)
+                        {
+                            <th>Thao tác</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var member in Model.Members)
+                    {
+                        <tr data-user-id="@member.UserId">
+                            <td>@(member.User?.FullName ?? "Không xác định")</td>
+                            <td>@(member.User?.Email ?? "Không xác định")</td>
+                            <td class="role-cell">
+                                @if (isAdmin && member.UserId != userId && member.Role != MemberRole.Admin)
+                                {
+                                    <!-- Dropdown vai trò cho Editor/Viewer -->
+                                    <div class="d-flex align-items-center">
+                                        <select class="form-control form-control-sm change-role"
+                                                data-group-id="@Model.GroupId"
+                                                data-user-id="@member.UserId">
+                                            <option value="Editor" selected="@(member.Role == MemberRole.Editor)">Editor</option>
+                                            <option value="Viewer" selected="@(member.Role == MemberRole.Viewer)">Viewer</option>
+                                        </select>
+                                        <!-- Nút Lưu vai trò -->
+                                        <button class="btn btn-success btn-sm ms-2 save-role"
+                                                data-group-id="@Model.GroupId"
+                                                data-user-id="@member.UserId"
+                                                onclick="saveRole(this)">
+                                            Lưu
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <!-- Hiển thị văn bản readonly cho Admin hoặc chính mình -->
+                                    @member.Role
+                                }
+                            </td>
+                            <td>@member.JoinedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            @if (isAdmin && member.UserId != userId)
+                            {
+                                <td>
+                                    <!-- Nút xóa thành viên, chỉ hiển thị nếu không phải Admin -->
+                                    @if (member.Role != MemberRole.Admin)
+                                    {
+                                        <button class="btn btn-danger btn-sm remove-member"
+                                                data-group-id="@Model.GroupId"
+                                                data-user-id="@member.UserId"
+                                                onclick="confirmAction('Xóa thành viên này?', this, 'RemoveMember')">
+                                            Xóa
+                                        </button>
+                                    }
+                                    <!-- Nút trao quyền Admin, chỉ hiển thị nếu không phải Admin -->
+                                    @if (member.Role != MemberRole.Admin)
+                                    {
+                                        <button class="btn btn-primary btn-sm assign-admin"
+                                                data-group-id="@Model.GroupId"
+                                                data-user-id="@member.UserId"
+                                                onclick="confirmAction('Trao quyền Admin cho thành viên này?', this, 'AssignAdmin')">
+                                            Trao quyền Admin
+                                        </button>
+                                    }
+                                </td>
+                            }
+                            else if (isAdmin)
+                            {
+                                <td>-</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>Chưa có thành viên nào trong dự án.</p>
+        }
+    </div>
+</div>
+
+<!-- Nút điều hướng -->
+<div class="mt-3">
+    @if (isAdmin)
+    {
+        <a asp-action="InviteMembers" asp-route-id="@Model.GroupId" class="btn btn-primary">Mời thành viên</a>
+    }
+    <a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>
+</div>
+
+<!-- Toast hiển thị thông báo, đặt trong main -->
+<div class="toast-container position-fixed top-right p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Thông báo</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <!-- Script xử lý AJAX và Toast -->
+    <script>
+        // Hiển thị toast thông báo
+        function showToast(message, isSuccess) {
+            const toast = $('#liveToast');
+            const toastBody = toast.find('.toast-body');
+            toastBody.text(message);
+            toast.removeClass('bg-success bg-danger text-white');
+            toast.addClass(isSuccess ? 'bg-success' : 'bg-danger').addClass('text-white');
+            const bsToast = new bootstrap.Toast(toast[0]);
+            bsToast.show();
+        }
+
+        // Xác nhận trước khi thực hiện hành động (xóa hoặc trao quyền)
+        function confirmAction(message, element, action) {
+            if (confirm(message)) {
+                const groupId = $(element).data('group-id');
+                const userId = $(element).data('user-id');
+                performAjaxAction(action, groupId, userId, null);
+            }
+        }
+
+        // Lưu vai trò khi nhấn nút Lưu
+        function saveRole(element) {
+            const groupId = $(element).data('group-id');
+            const userId = $(element).data('user-id');
+            const role = $(element).closest('.role-cell').find('.change-role').val();
+            performAjaxAction('ChangeRole', groupId, userId, role);
+        }
+
+        // Gửi yêu cầu AJAX tới server
+        function performAjaxAction(action, groupId, userId, role) {
+            const token = $('input[name="__RequestVerificationToken"]').val();
+            const data = { GroupId: parseInt(groupId), UserId: userId };
+            if (role) data.Role = role;
+
+            $.ajax({
+                url: `/Project/${action}`,
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function (response) {
+                    showToast(response.message, response.success);
+                    if (response.success) {
+                        // Cập nhật giao diện
+                        const row = $(`tr[data-user-id="${userId}"]`);
+                        if (action === 'RemoveMember') {
+                            row.remove(); // Xóa hàng khỏi bảng
+                        } else if (action === 'ChangeRole') {
+                            // Cập nhật trạng thái dropdown
+                            const roleSelect = row.find('.change-role');
+                            roleSelect.val(role); // Đặt giá trị selected
+                        } else if (action === 'AssignAdmin') {
+                            // Ẩn nút trao quyền Admin và xóa
+                            const assignButton = row.find('.assign-admin');
+                            const removeButton = row.find('.remove-member');
+                            assignButton.hide();
+                            removeButton.hide();
+                            // Cập nhật vai trò thành văn bản Admin
+                            const roleCell = row.find('.role-cell');
+                            roleCell.html('Admin');
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    showToast('Lỗi hệ thống: ' + (xhr.responseJSON?.message || xhr.statusText), false);
+                }
+            });
+        }
+    </script>
+    <!-- CSS tùy chỉnh cho Toast -->
+    <style>
+        .top-right {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
+        .toast {
+            min-width: 250px;
+            max-width: 350px;
+        }
+    </style>
+}

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using ZEIN_TeamPlanner.Models; // Đảm bảo namespace đúng với vị trí model
+using ZEIN_TeamPlanner.Models;
 
 namespace TeamPlanner.Data
 {
@@ -16,12 +16,13 @@ namespace TeamPlanner.Data
         public DbSet<GroupMember> GroupMembers { get; set; }
         public DbSet<TaskItem> TaskItems { get; set; }
         public DbSet<CalendarEvent> CalendarEvents { get; set; }
+        public DbSet<Invitation> Invitations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // Unique constraint: mỗi user chỉ là thành viên 1 lần trong mỗi nhóm
+            // Ràng buộc duy nhất: mỗi user chỉ là thành viên 1 lần trong mỗi nhóm
             builder.Entity<GroupMember>()
                 .HasIndex(gm => new { gm.UserId, gm.GroupId })
                 .IsUnique();
@@ -64,9 +65,16 @@ namespace TeamPlanner.Data
             // Quan hệ: Group - CreatedByUser
             builder.Entity<Group>()
                 .HasOne(g => g.CreatedByUser)
-                .WithMany()
+                .WithMany() // Không có thuộc tính điều hướng ngược
                 .HasForeignKey(g => g.CreatedByUserId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.SetNull); // Đặt thành null nếu user bị xóa
+
+            // Quan hệ: Invitation - Group
+            builder.Entity<Invitation>()
+                .HasOne(i => i.Group)
+                .WithMany()
+                .HasForeignKey(i => i.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Ràng buộc dữ liệu User
             builder.Entity<ApplicationUser>()

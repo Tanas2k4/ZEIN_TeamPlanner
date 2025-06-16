@@ -1,0 +1,32 @@
+﻿@model List<Group>
+@{
+    ViewData["Title"] = "Danh sách dự án";
+}
+
+<h2>Danh sách dự án</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên dự án</th>
+            <th>Mô tả</th>
+            <th>Ngày bắt đầu</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var group in Model ?? new List<Group>())
+        {
+            <tr>
+                <td>@group.GroupName</td>
+                <td>@group.Description</td>
+                <td>@group.CreateAt.ToString("dd/MM/yyyy")</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@group.GroupId" class="btn btn-info btn-sm">Xem chi tiết</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="Create" class="btn btn-primary">Tạo dự án mới</a>

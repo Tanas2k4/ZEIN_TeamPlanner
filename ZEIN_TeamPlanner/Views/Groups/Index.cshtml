@@ -1,0 +1,44 @@
+﻿@model IEnumerable<ZEIN_TeamPlanner.Models.Group>
+
+@{
+    ViewData["Title"] = "My Groups";
+}
+
+<h2>My Groups</h2>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New Group</a>
+</p>
+
+@if (Model.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Members</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var group in Model)
+            {
+                <tr>
+                    <td>@group.GroupName</td>
+                    <td>@(group.Description?.Length > 50 ? group.Description.Substring(0, 50) + "..." : group.Description)</td>
+                    <td>@group.Members.Count</td>
+                    <td>@group.CreateAt.ToString("dd MMM yyyy")</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@group.GroupId" class="btn btn-sm btn-info">Details</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>You are not a member of any groups. Create one to get started!</p>
+}

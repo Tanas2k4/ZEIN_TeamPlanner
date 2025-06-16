@@ -1,0 +1,60 @@
+﻿@using System.Security.Claims
+@model ZEIN_TeamPlanner.Models.Group
+
+@{
+    ViewData["Title"] = Model.GroupName;
+}
+
+<h2>@Model.GroupName</h2>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Group Details</h5>
+        <dl class="row">
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">@Model.GroupName</dd>
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@(Model.Description ?? "No description provided")</dd>
+            <dt class="col-sm-3">Created By</dt>
+            <dd class="col-sm-9">@Model.CreatedByUser?.FullName</dd>
+            <dt class="col-sm-3">Created At</dt>
+            <dd class="col-sm-9">@Model.CreateAt.ToString("dd MMM yyyy")</dd>
+        </dl>
+    </div>
+</div>
+
+<h3 class="mt-4">Members</h3>
+@if (Model.Members.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Joined At</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var member in Model.Members)
+            {
+                <tr>
+                    <td>@member.User.FullName</td>
+                    <td>@member.Role</td>
+                    <td>@member.JoinedAt.ToString("dd MMM yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No members in this group.</p>
+}
+
+<div class="mt-3">
+    <a asp-action="Index" class="btn btn-primary">Back to Groups</a>
+    @if (Model.Members.Any(m => m.UserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
+    {
+        <a asp-action="Edit" asp-route-id="@Model.GroupId" class="btn btn-secondary">Edit Group</a>
+    }
+</div>

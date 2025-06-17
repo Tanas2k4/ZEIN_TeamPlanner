@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using ZEIN_TeamPlanner.Models;
 
 namespace ZEIN_TeamPlanner.Models
 {
@@ -15,6 +14,7 @@ namespace ZEIN_TeamPlanner.Models
         [Required(ErrorMessage = "* Vui lòng chọn trạng thái")]
         public TaskItem.TaskStatus Status { get; set; } = TaskItem.TaskStatus.ToDo;
 
+        [FutureDate(ErrorMessage = "* Hạn chót phải lớn hơn thời điểm hiện tại")]
         [DataType(DataType.Date)]
         public DateTime? Deadline { get; set; }
 

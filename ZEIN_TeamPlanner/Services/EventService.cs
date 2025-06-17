@@ -22,6 +22,9 @@ namespace ZEIN_TeamPlanner.Services
             if (!isMember)
                 throw new UnauthorizedAccessException("Bạn không phải là thành viên của group này.");
 
+            if (dto.StartTime <= DateTimeOffset.UtcNow)
+                throw new InvalidOperationException("Thời gian bắt đầu phải lớn hơn thời điểm hiện tại.");
+
             if (dto.EndTime.HasValue && dto.EndTime <= dto.StartTime)
                 throw new InvalidOperationException("Thời gian kết thúc phải sau thời gian bắt đầu.");
 
@@ -38,7 +41,6 @@ namespace ZEIN_TeamPlanner.Services
                 }
             }
 
-            // Validate TimeZoneId
             if (!TimeZoneInfo.GetSystemTimeZones().Any(tz => tz.Id == dto.TimeZoneId) &&
                 !NodaTime.DateTimeZoneProviders.Tzdb.Ids.Contains(dto.TimeZoneId))
                 throw new InvalidOperationException("Múi giờ không hợp lệ.");
@@ -74,6 +76,10 @@ namespace ZEIN_TeamPlanner.Services
             if (!isAdmin)
                 throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa sự kiện này.");
 
+            //Check time constraints
+            if (dto.StartTime <= DateTimeOffset.UtcNow)
+                throw new InvalidOperationException("Thời gian bắt đầu phải lớn hơn thời điểm hiện tại.");
+
             if (dto.EndTime.HasValue && dto.EndTime <= dto.StartTime)
                 throw new InvalidOperationException("Thời gian kết thúc phải sau thời gian bắt đầu.");
 
@@ -90,7 +96,6 @@ namespace ZEIN_TeamPlanner.Services
                 }
             }
 
-            // Validate TimeZoneId
             if (!TimeZoneInfo.GetSystemTimeZones().Any(tz => tz.Id == dto.TimeZoneId) &&
                 !NodaTime.DateTimeZoneProviders.Tzdb.Ids.Contains(dto.TimeZoneId))
                 throw new InvalidOperationException("Múi giờ không hợp lệ.");

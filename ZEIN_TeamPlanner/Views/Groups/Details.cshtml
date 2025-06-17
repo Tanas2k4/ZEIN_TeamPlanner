@@ -30,8 +30,9 @@
         <thead>
             <tr>
                 <th>Name</th>
+                <th>Email</th>
                 <th>Role</th>
-                <th>Joined At</th>
+                <th>Joined At</th>        
             </tr>
         </thead>
         <tbody>
@@ -39,6 +40,7 @@
             {
                 <tr>
                     <td>@member.User.FullName</td>
+					<td>@member.User.Email</td>
                     <td>@member.Role</td>
                     <td>@member.JoinedAt.ToString("dd MMM yyyy")</td>
                 </tr>

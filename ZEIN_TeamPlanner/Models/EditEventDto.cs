@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using ZEIN_TeamPlanner.Models;
 
 namespace ZEIN_TeamPlanner.Models
 {
@@ -15,9 +14,11 @@ namespace ZEIN_TeamPlanner.Models
         public string Description { get; set; } = "";
 
         [Required(ErrorMessage = "* Vui lòng chọn thời gian bắt đầu")]
+        [FutureDate(ErrorMessage = "* Thời gian bắt đầu phải lớn hơn thời điểm hiện tại")] // check constraint for future date
         [DataType(DataType.DateTime)]
         public DateTimeOffset StartTime { get; set; }
 
+        [EndTimeGreaterThanStartTime("StartTime", ErrorMessage = "* Thời gian kết thúc phải lớn hơn thời gian bắt đầu")] // check constraint for end time greater than start time
         [DataType(DataType.DateTime)]
         public DateTimeOffset? EndTime { get; set; }
 

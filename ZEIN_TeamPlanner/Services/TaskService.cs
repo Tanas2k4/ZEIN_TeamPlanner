@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TeamPlanner.Data;
-
 using ZEIN_TeamPlanner.Models;
 
 namespace ZEIN_TeamPlanner.Services
@@ -31,6 +30,9 @@ namespace ZEIN_TeamPlanner.Services
 
             if (dto.PriorityId.HasValue && !await _context.Priorities.AnyAsync(p => p.PriorityId == dto.PriorityId))
                 throw new InvalidOperationException("Ưu tiên không hợp lệ.");
+
+            if (dto.Deadline.HasValue && dto.Deadline <= DateTime.UtcNow)
+                throw new InvalidOperationException("Hạn chót phải lớn hơn thời điểm hiện tại.");
 
             var task = new TaskItem
             {
@@ -74,6 +76,10 @@ namespace ZEIN_TeamPlanner.Services
 
             if (dto.PriorityId.HasValue && !await _context.Priorities.AnyAsync(p => p.PriorityId == dto.PriorityId))
                 throw new InvalidOperationException("Ưu tiên không hợp lệ.");
+
+            // Check if the priority is valid only if it is provided
+            if (dto.Deadline.HasValue && dto.Deadline <= DateTime.UtcNow)  
+                throw new InvalidOperationException("Hạn chót phải lớn hơn thời điểm hiện tại.");
 
             task.Title = dto.Title;
             task.Description = dto.Description;

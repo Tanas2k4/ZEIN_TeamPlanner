@@ -1,0 +1,54 @@
+﻿@model ZEIN_TeamPlanner.Models.CreateGroupDto
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+<h2>Tạo Group Mới</h2>
+
+<form asp-action="Create" method="post">
+    <div class="form-group mb-3">
+        <label asp-for="GroupName" class="form-label"></label>
+        <input asp-for="GroupName" class="form-control" />
+        <span asp-validation-for="GroupName" class="text-danger"></span>
+    </div>
+    <div class="form-group mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="form-group mb-3">
+        <label for="MemberIds" class="form-label">Thành viên</label>
+        <select asp-for="MemberIds" multiple class="form-select" id="memberSelect">
+            @foreach (var user in ViewBag.Users)
+            {
+                <option value="@user.Id">@user.FullName</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Tạo Group</button>
+    <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#memberSelect').select2({
+                placeholder: "Chọn thành viên",
+                allowClear: true
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+}

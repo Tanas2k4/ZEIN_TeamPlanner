@@ -1,0 +1,61 @@
+﻿@using System.Security.Claims
+@model IEnumerable<ZEIN_TeamPlanner.Models.TaskItem>
+
+@{
+    ViewData["Title"] = "Global Tasks";
+}
+
+<h2>Global Tasks</h2>
+
+@if (ViewBag.Message != null)
+{
+    <div class="alert alert-info">@ViewBag.Message</div>
+}
+
+<p>
+    <a asp-controller="Groups" asp-action="Index" class="btn btn-primary">Back to Groups</a>
+</p>
+
+@if (Model.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Group</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Deadline</th>
+                <th>Priority</th>
+                <th>Assigned To</th>
+                <th>Tags</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var task in Model)
+            {
+                <tr>
+                    <td><a asp-controller="Groups" asp-action="Details" asp-route-id="@task.GroupId">@task.Group.GroupName</a></td>
+                    <td>@task.Title</td>
+                    <td>@task.Status</td>
+                    <td>@(task.Deadline.HasValue? task.Deadline.Value.ToString("dd MMM yyyy HH:mm") : "None")</td>
+                    <td>@(task.Priority?.Name ?? "None")</td>
+                    <td>@(task.AssignedToUser?.UserName ?? "Unassigned")</td>
+                    <td>@(string.IsNullOrEmpty(task.Tags) ? "None" : task.Tags)</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-info">Details</a>
+                        @if (task.Group.Members.Any(m => m.UserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
+                        {
+                            <a asp-action="Edit" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-secondary">Edit</a>
+                            <a asp-action="Delete" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-danger">Delete</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No tasks found. Join or create a group to start adding tasks!</p>
+}

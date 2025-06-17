@@ -1,0 +1,58 @@
+﻿@using System.Security.Claims
+@model IEnumerable<ZEIN_TeamPlanner.Models.CalendarEvent>
+
+@{
+    ViewData["Title"] = "Events - " + ViewBag.GroupName;
+    var groupId = ViewBag.GroupId;
+}
+
+<h2>Events in @ViewBag.GroupName</h2>
+
+<p>
+    <a asp-action="Create" asp-route-groupId="@groupId" class="btn btn-primary">Create New Event</a>
+    <a asp-action="Calendar" asp-route-groupId="@groupId" class="btn btn-info">View Calendar</a>
+    <a asp-controller="Groups" asp-action="Details" asp-route-id="@groupId" class="btn btn-secondary">Back to Group</a>
+</p>
+
+@if (Model.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Time Zone</th>
+                <th>Type</th>
+                <th>All Day</th>
+                <th>Recurrence</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var calendarEvent in Model)
+            {
+                <tr>
+                    <td>@calendarEvent.Title</td>
+                    <td>@calendarEvent.StartTime.ToString("dd MMM yyyy HH:mm zzz")</td>
+                    <td>@(calendarEvent.EndTime.HasValue? calendarEvent.EndTime.Value.ToString("dd MMM yyyy HH:mm zzz") : "None")</td>
+                    <td>@calendarEvent.TimeZoneId</td>
+                    <td>@calendarEvent.Type</td>
+                    <td>@(calendarEvent.IsAllDay ? "Yes" : "No")</td>
+                    <td>@(calendarEvent.RecurrenceRule ?? "None")</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@calendarEvent.CalendarEventId" class="btn btn-sm btn-info">Details</a>
+                        @if (calendarEvent.Group.Members.Any(m => m.UserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
+                        {
+                            <a asp-action="Edit" asp-route-id="@calendarEvent.CalendarEventId" class="btn btn-sm btn-secondary">Edit</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No events in this group. Create one to get started!</p>
+}

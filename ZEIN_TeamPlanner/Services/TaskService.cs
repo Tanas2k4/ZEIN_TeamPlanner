@@ -100,5 +100,22 @@ namespace ZEIN_TeamPlanner.Services
             return task.Group.Members.Any(m => m.UserId == userId && m.LeftAt == null) ||
                    task.Group.CreatedByUserId == userId;
         }
+
+        public async Task DeleteTaskAsync(int taskId, string userId)
+        {
+            var task = await _context.TaskItems
+                .Include(t => t.Group).ThenInclude(g => g.Members)
+                .FirstOrDefaultAsync(t => t.TaskItemId == taskId);
+
+            if (task == null)
+                throw new KeyNotFoundException("Nhiệm vụ không tồn tại.");
+
+            var isAdmin = task.Group.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin);
+            if (task.AssignedToUserId != userId && !isAdmin)
+                throw new UnauthorizedAccessException("Bạn không có quyền xóa nhiệm vụ này.");
+
+            _context.TaskItems.Remove(task);
+            await _context.SaveChangesAsync();
+        }
     }
 }

@@ -47,6 +47,7 @@
                         @if (task.Group.Members.Any(m => m.UserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
                         {
                             <a asp-action="Edit" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-secondary">Edit</a>
+                            <a asp-action="Delete" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-danger">Delete</a>
                         }
                     </td>
                 </tr>

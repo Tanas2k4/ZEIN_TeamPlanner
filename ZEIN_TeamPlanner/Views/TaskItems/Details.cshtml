@@ -41,5 +41,6 @@
         Model.Group.Members.Any(m => m.UserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
     {
         <a asp-action="Edit" asp-route-id="@Model.TaskItemId" class="btn btn-secondary">Edit Task</a>
+        <a asp-action="Delete" asp-route-id="@Model.TaskItemId" class="btn btn-danger">Delete Task</a>
     }
 </div>

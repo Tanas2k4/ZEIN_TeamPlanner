@@ -267,5 +267,44 @@ namespace ZEIN_TeamPlanner.Controllers
 
             return View(tasks);
         }
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var task = await _context.TaskItems
+                .Include(t => t.Group).ThenInclude(g => g.Members)
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.Priority)
+                .FirstOrDefaultAsync(t => t.TaskItemId == id);
+
+            if (task == null)
+                return NotFound();
+
+            var isAdmin = task.Group?.Members?.Any(m => m.UserId == userId && m.Role == GroupRole.Admin) == true;
+            if (task.AssignedToUserId != userId && !isAdmin)
+                return Forbid();
+
+            return View(task);
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                await _taskService.DeleteTaskAsync(id, userId);
+                return RedirectToAction(nameof(GlobalTasks));
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+        }
     }
 }

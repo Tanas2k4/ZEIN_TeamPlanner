@@ -21,16 +21,20 @@ namespace ZEIN_TeamPlanner.Controllers
             _userManager = userManager;
         }
 
-        // Hiển thị danh sách dự án mà người dùng là thành viên hoặc người tạo
+        // Hiển thị danh sách dự án mà người dùng là thành viên
         public async Task<IActionResult> Index()
         {
             var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrEmpty(userId)) return RedirectToAction("Login", "Account");
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Log lỗi hoặc redirect
+                return RedirectToAction("Login", "Account");
+            }
 
             var groups = await _context.Groups
                 .Include(g => g.Members)
                 .ThenInclude(m => m.User)
-                .Where(g => g.Members.Any(m => m.UserId == userId) || g.CreatedByUserId == userId)
+                .Where(g => g.Members.Any(m => m.UserId == userId && m.User != null))
                 .ToListAsync();
 
             return View(groups);
@@ -57,7 +61,6 @@ namespace ZEIN_TeamPlanner.Controllers
                 var userId = _userManager.GetUserId(User);
                 if (string.IsNullOrEmpty(userId)) return RedirectToAction("Login", "Account");
 
-                // Gán người tạo và khởi tạo các danh sách rỗng
                 model.CreatedByUserId = userId;
                 model.Members = new List<GroupMember>();
                 model.Tasks = new List<TaskItem>();
@@ -66,7 +69,6 @@ namespace ZEIN_TeamPlanner.Controllers
                 _context.Groups.Add(model);
                 await _context.SaveChangesAsync();
 
-                // Thêm người tạo làm Admin của nhóm
                 var creatorMembership = new GroupMember
                 {
                     UserId = userId,
@@ -86,7 +88,7 @@ namespace ZEIN_TeamPlanner.Controllers
             }
         }
 
-        // Hiển thị chi tiết dự án, chỉ cho phép thành viên hoặc người tạo xem
+        // Hiển thị chi tiết dự án
         public async Task<IActionResult> Details(int id)
         {
             var userId = _userManager.GetUserId(User);
@@ -99,7 +101,7 @@ namespace ZEIN_TeamPlanner.Controllers
 
             if (group == null) return NotFound();
 
-            if (!group.Members.Any(m => m.UserId == userId) && group.CreatedByUserId != userId)
+            if (!group.Members.Any(m => m.UserId == userId && m.User != null) && group.CreatedByUserId != userId)
             {
                 return Forbid();
             }
@@ -107,20 +109,29 @@ namespace ZEIN_TeamPlanner.Controllers
             return View(group);
         }
 
-        // Hiển thị form mời thành viên, chỉ dành cho Admin
+        // Hiển thị form mời thành viên
         public async Task<IActionResult> InviteMembers(int id)
         {
             var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrEmpty(userId)) return RedirectToAction("Login", "Account");
+            if (string.IsNullOrEmpty(userId))
+            {
+                return RedirectToAction("Login", "Account");
+            }
 
             var project = await _context.Groups
                 .Include(g => g.Members)
                 .ThenInclude(m => m.User)
                 .FirstOrDefaultAsync(g => g.GroupId == id);
-            if (project == null) return NotFound();
+            if (project == null)
+            {
+                return NotFound();
+            }
 
-            var isAdmin = project.Members.Any(m => m.UserId == userId && m.Role == MemberRole.Admin) || project.CreatedByUserId == userId;
-            if (!isAdmin) return Forbid();
+            var isAdmin = project.Members.Any(m => m.UserId == userId && m.Role == MemberRole.Admin && m.User != null) || project.CreatedByUserId == userId;
+            if (!isAdmin)
+            {
+                return Forbid("Bạn không có quyền mời thành viên.");
+            }
 
             var viewModel = new InviteMembersViewModel
             {
@@ -130,7 +141,7 @@ namespace ZEIN_TeamPlanner.Controllers
             return View(viewModel);
         }
 
-        // Xử lý mời thành viên, kiểm tra email trùng lặp
+        // Xử lý mời thành viên
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> InviteMembers(InviteMembersViewModel model)
@@ -144,7 +155,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 .FirstOrDefaultAsync(g => g.GroupId == model.GroupId);
             if (project == null) return NotFound();
 
-            var isAdmin = project.Members.Any(m => m.UserId == userId && m.Role == MemberRole.Admin) || project.CreatedByUserId == userId;
+            var isAdmin = project.Members.Any(m => m.UserId == userId && m.Role == MemberRole.Admin && m.User != null) || project.CreatedByUserId == userId;
             if (!isAdmin) return Forbid();
 
             if (ModelState.IsValid)
@@ -186,12 +197,11 @@ namespace ZEIN_TeamPlanner.Controllers
             return View(model);
         }
 
-        // Xóa thành viên khỏi nhóm, trả về JSON cho AJAX
+        // Xóa thành viên khỏi nhóm
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveMember([FromBody] Dictionary<string, object> request)
         {
-            // Kiểm tra dữ liệu đầu vào
             if (!request.ContainsKey("GroupId") || !request.ContainsKey("UserId") ||
                 !int.TryParse(request["GroupId"].ToString(), out int groupId) || string.IsNullOrEmpty(request["UserId"]?.ToString()))
             {
@@ -213,8 +223,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 return Json(new { success = false, message = "Không tìm thấy dự án." });
             }
 
-            // Kiểm tra quyền Admin hoặc người tạo
-            var isAdmin = group.Members.Any(m => m.UserId == currentUserId && m.Role == MemberRole.Admin) || group.CreatedByUserId == currentUserId;
+            var isAdmin = group.Members.Any(m => m.UserId == currentUserId && m.Role == MemberRole.Admin && m.User != null) || group.CreatedByUserId == currentUserId;
             if (!isAdmin)
             {
                 return Json(new { success = false, message = "Bạn không có quyền xóa thành viên." });
@@ -229,7 +238,6 @@ namespace ZEIN_TeamPlanner.Controllers
             {
                 return Json(new { success = false, message = "Không thể xóa chính mình." });
             }
-            // Chặn Admin xóa Admin khác
             if (member.Role == MemberRole.Admin)
             {
                 return Json(new { success = false, message = "Không thể xóa Admin khác." });
@@ -240,12 +248,11 @@ namespace ZEIN_TeamPlanner.Controllers
             return Json(new { success = true, message = "Xóa thành viên thành công." });
         }
 
-        // Thay đổi vai trò của thành viên, trả về JSON cho AJAX
+        // Thay đổi vai trò của thành viên
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeRole([FromBody] Dictionary<string, object> request)
         {
-            // Kiểm tra dữ liệu đầu vào
             if (!request.ContainsKey("GroupId") || !request.ContainsKey("UserId") || !request.ContainsKey("Role") ||
                 !int.TryParse(request["GroupId"].ToString(), out int groupId) || string.IsNullOrEmpty(request["UserId"]?.ToString()) ||
                 !Enum.TryParse<MemberRole>(request["Role"]?.ToString(), out var role))
@@ -268,8 +275,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 return Json(new { success = false, message = "Không tìm thấy dự án." });
             }
 
-            // Kiểm tra quyền Admin hoặc người tạo
-            var isAdmin = group.Members.Any(m => m.UserId == currentUserId && m.Role == MemberRole.Admin) || group.CreatedByUserId == currentUserId;
+            var isAdmin = group.Members.Any(m => m.UserId == currentUserId && m.Role == MemberRole.Admin && m.User != null) || group.CreatedByUserId == currentUserId;
             if (!isAdmin)
             {
                 return Json(new { success = false, message = "Bạn không có quyền thay đổi vai trò." });
@@ -290,12 +296,11 @@ namespace ZEIN_TeamPlanner.Controllers
             return Json(new { success = true, message = $"Cập nhật vai trò thành {role} thành công." });
         }
 
-        // Trao quyền Admin cho thành viên, trả về JSON cho AJAX
+        // Trao quyền Admin cho thành viên
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignAdmin([FromBody] Dictionary<string, object> request)
         {
-            // Kiểm tra dữ liệu đầu vào
             if (!request.ContainsKey("GroupId") || !request.ContainsKey("UserId") ||
                 !int.TryParse(request["GroupId"].ToString(), out int groupId) || string.IsNullOrEmpty(request["UserId"]?.ToString()))
             {
@@ -317,25 +322,74 @@ namespace ZEIN_TeamPlanner.Controllers
                 return Json(new { success = false, message = "Không tìm thấy dự án." });
             }
 
-            // Kiểm tra quyền Admin hoặc người tạo
-            var isAdmin = group.Members.Any(m => m.UserId == currentUserId && m.Role == MemberRole.Admin) || group.CreatedByUserId == currentUserId;
+            var isAdmin = group.Members.Any(m => m.UserId == currentUserId && m.Role == MemberRole.Admin && m.User != null) || group.CreatedByUserId == currentUserId;
             if (!isAdmin)
             {
                 return Json(new { success = false, message = "Bạn không có quyền trao quyền Admin." });
             }
-
+            
             var member = group.Members.FirstOrDefault(m => m.UserId == userId);
             if (member == null)
             {
                 return Json(new { success = false, message = "Thành viên không tồn tại." });
             }
 
-            // Cập nhật vai trò thành Admin và lưu vào CSDL
             member.Role = MemberRole.Admin;
             _context.GroupMembers.Update(member);
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = "Trao quyền Admin thành công." });
+        }
+
+        // Xử lý rời dự án
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequestLeaveProject([FromBody] Dictionary<string, object> request)
+        {
+            if (!request.ContainsKey("GroupId") || !int.TryParse(request["GroupId"].ToString(), out int groupId))
+            {
+                return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
+            }
+
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Json(new { success = false, message = "Chưa đăng nhập." });
+            }
+
+            var group = await _context.Groups
+                .Include(g => g.Members)
+                .FirstOrDefaultAsync(g => g.GroupId == groupId);
+            if (group == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy dự án." });
+            }
+
+            var member = group.Members.FirstOrDefault(m => m.UserId == userId);
+            if (member == null)
+            {
+                return Json(new { success = false, message = "Bạn không phải thành viên của dự án." });
+            }
+
+            var adminCount = group.Members.Count(m => m.Role == MemberRole.Admin && m.User != null);
+            var totalMembers = group.Members.Count(m => m.User != null);
+
+            if (member.Role == MemberRole.Admin && adminCount == 1 && totalMembers > 1)
+            {
+                return Json(new { success = false, message = "Bạn là Admin duy nhất, không thể rời dự án khi còn thành viên khác. Vui lòng trao quyền Admin cho người khác trước." });
+            }
+
+            _context.GroupMembers.Remove(member);
+            await _context.SaveChangesAsync();
+
+            var remainingMembers = await _context.GroupMembers.CountAsync(m => m.GroupId == groupId && m.User != null);
+            if (remainingMembers == 0)
+            {
+                _context.Groups.Remove(group);
+                await _context.SaveChangesAsync();
+            }
+
+            return Json(new { success = true, message = "Bạn đã rời dự án thành công.", redirectUrl = Url.Action("Index") });
         }
     }
 }

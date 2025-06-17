@@ -22,35 +22,6 @@ namespace ZEIN_TeamPlanner.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Group", b =>
-                {
-                    b.Property<int>("GroupId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GroupId"));
-
-                    b.Property<DateTime>("CreateAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedByUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GroupName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("GroupId");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.ToTable("Groups");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -301,6 +272,35 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.ToTable("CalendarEvents");
                 });
 
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.Group", b =>
+                {
+                    b.Property<int>("GroupId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GroupId"));
+
+                    b.Property<DateTime>("CreateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GroupName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("GroupId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.ToTable("Groups");
+                });
+
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.GroupMember", b =>
                 {
                     b.Property<int>("GroupMemberId")
@@ -367,6 +367,46 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.ToTable("Invitations");
                 });
 
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("IsAccepted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.TaskItem", b =>
                 {
                     b.Property<int>("TaskItemId")
@@ -406,16 +446,6 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.HasIndex("GroupId");
 
                     b.ToTable("TaskItems");
-                });
-
-            modelBuilder.Entity("Group", b =>
-                {
-                    b.HasOne("ZEIN_TeamPlanner.Models.ApplicationUser", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CreatedByUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -471,7 +501,7 @@ namespace ZEIN_TeamPlanner.Migrations
 
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.CalendarEvent", b =>
                 {
-                    b.HasOne("Group", "Group")
+                    b.HasOne("ZEIN_TeamPlanner.Models.Group", "Group")
                         .WithMany("Events")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -480,9 +510,19 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.Navigation("Group");
                 });
 
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.Group", b =>
+                {
+                    b.HasOne("ZEIN_TeamPlanner.Models.ApplicationUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatedByUser");
+                });
+
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.GroupMember", b =>
                 {
-                    b.HasOne("Group", "Group")
+                    b.HasOne("ZEIN_TeamPlanner.Models.Group", "Group")
                         .WithMany("Members")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -501,13 +541,32 @@ namespace ZEIN_TeamPlanner.Migrations
 
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.Invitation", b =>
                 {
-                    b.HasOne("Group", "Group")
+                    b.HasOne("ZEIN_TeamPlanner.Models.Group", "Group")
                         .WithMany()
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.Notification", b =>
+                {
+                    b.HasOne("ZEIN_TeamPlanner.Models.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ZEIN_TeamPlanner.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.TaskItem", b =>
@@ -517,7 +576,7 @@ namespace ZEIN_TeamPlanner.Migrations
                         .HasForeignKey("AssignedToUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Group", "Group")
+                    b.HasOne("ZEIN_TeamPlanner.Models.Group", "Group")
                         .WithMany("Tasks")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -528,20 +587,20 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.Navigation("Group");
                 });
 
-            modelBuilder.Entity("Group", b =>
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("AssignedTasks");
+
+                    b.Navigation("GroupMemberships");
+                });
+
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.Group", b =>
                 {
                     b.Navigation("Events");
 
                     b.Navigation("Members");
 
                     b.Navigation("Tasks");
-                });
-
-            modelBuilder.Entity("ZEIN_TeamPlanner.Models.ApplicationUser", b =>
-                {
-                    b.Navigation("AssignedTasks");
-
-                    b.Navigation("GroupMemberships");
                 });
 #pragma warning restore 612, 618
         }

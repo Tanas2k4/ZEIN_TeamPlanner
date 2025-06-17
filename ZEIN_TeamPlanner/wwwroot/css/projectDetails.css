@@ -1,0 +1,256 @@
+﻿.project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+/*    background: linear-gradient(to right, #00AE72, #00c4b4);*/
+    border-radius: 10px;
+/*    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);*/
+    color: white;
+    position: relative;
+    overflow: hidden;
+    z-index: 1; /* Đảm bảo nút không bị che */
+}
+
+    .project-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+        animation: pulse 8s infinite;
+        z-index: -1; /* Đặt phía sau nội dung */
+    }
+
+.header-content {
+    text-align: center;
+    flex-grow: 1;
+}
+
+.project-title {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: #00AE72;
+}
+
+.header-subtitle {
+    font-size: 0.9rem;
+    color: #514f4f;
+    opacity: 0.8;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .header-actions .btn {
+        margin-left: 0; /* Loại bỏ margin để tránh lệch */
+        padding: 12px 25px;
+        font-size: 1rem;
+        border: none;
+        transition: all 0.3s ease;
+        cursor: pointer; /* Đảm bảo con trỏ là pointer */
+        z-index: 2; /* Đảm bảo nút nằm trên gradient */
+    }
+
+    .header-actions .btn-primary {
+        background-color: #ffffff;
+        color: #00AE72;
+        border: 2px solid #00AE72; /* Thêm viền màu chính */
+    }
+
+        .header-actions .btn-primary:hover {
+            background-color: #00AE72;
+            color: #ffffff;
+            border: 2px solid #ffffff; /* Thêm viền trắng khi hover */
+        }
+
+    .header-actions .btn-secondary {
+        background-color: #ffffff;
+        color: #00c4b4;
+        border: 2px solid #00c4b4; /* Thêm viền màu phụ */
+    }
+
+        .header-actions .btn-secondary:hover {
+            background-color: #00c4b4;
+            color: #ffffff;
+            border: 2px solid #ffffff; /* Thêm viền trắng khi hover */
+        }
+
+.clickable {
+    pointer-events: auto !important; /* Đảm bảo sự kiện click không bị chặn */
+}
+
+.project-details-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.project-card, .user-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: #ffffff;
+}
+
+    .project-card:hover, .user-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+.card-header {
+    background: linear-gradient(to right, #00AE72, #00c4b4);
+    color: white;
+    padding: 15px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+dl.row dt {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+dl.row dd {
+    color: #7f8c8d;
+    word-break: break-word;
+}
+
+    dl.row dd strong {
+        color: #00AE72;
+        font-weight: 600;
+    }
+
+.user-actions {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f8faf9;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #e6f7f0;
+    transition: background-color 0.3s ease;
+}
+
+.table-bordered th, .table-bordered td {
+    border-color: #e0e0e0;
+}
+
+.btn {
+    transition: all 0.3s ease;
+    border-radius: 5px;
+}
+
+    .btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+.toast-container {
+    top: 20px;
+    right: 20px;
+}
+
+.toast {
+    min-width: 250px;
+    max-width: 350px;
+    border-radius: 10px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.toast-header {
+    background: linear-gradient(to right, #00AE72, #00c4b4);
+    color: white;
+}
+
+.btn-close {
+    filter: invert(1) brightness(2);
+}
+
+/* Animation */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.animated {
+    animation-duration: 0.5s;
+    animation-fill-mode: both;
+}
+
+.fadeIn {
+    animation-name: fadeIn;
+}
+
+.fadeInUp {
+    animation-name: fadeInUp;
+}
+
+.zoomIn {
+    animation-name: zoomIn;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

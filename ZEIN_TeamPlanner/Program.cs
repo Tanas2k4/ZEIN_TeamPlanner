@@ -3,13 +3,16 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TeamPlanner.Data;
 using ZEIN_TeamPlanner.Models;
+using ZEIN_TeamPlanner.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // DB context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Services.AddScoped<IGroupService, GroupService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IEventService, EventService>();
 // Identity config
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {

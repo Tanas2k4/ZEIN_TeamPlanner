@@ -9,6 +9,12 @@ namespace ZEIN_TeamPlanner.Models
         public string? Address { get; set; } // Nullable nếu không bắt buộc
         public DateTime? DateOfBirth { get; set; } // Nullable vì không bắt buộc
 
+        public string TimeZoneId { get; set; } = "UTC"; // For scheduling across time zones
+        public bool IsOnline { get; set; } = false; // Presence status
+        public string? StatusMessage { get; set; } // Custom status like "Busy" or "Available"
+        public string? Department { get; set; } // Useful for organization-wide apps
+        public bool ReceiveEmailNotifications { get; set; } = true; // Notification preference
+
         // Thuộc tính tính toán Age từ DateOfBirth
         public int? Age
         {

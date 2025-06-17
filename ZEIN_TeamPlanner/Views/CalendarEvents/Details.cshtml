@@ -1,0 +1,42 @@
+﻿@using System.Security.Claims
+@model ZEIN_TeamPlanner.Models.CalendarEvent
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<h2>@Model.Title</h2>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Event Details</h5>
+        <dl class="row">
+            <dt class="col-sm-3">Title</dt>
+            <dd class="col-sm-9">@Model.Title</dd>
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@(Model.Description ?? "No description")</dd>
+            <dt class="col-sm-3">Start Time</dt>
+            <dd class="col-sm-9">@Model.StartTime.ToString("dd MMM yyyy HH:mm zzz")</dd>
+            <dt class="col-sm-3">End Time</dt>
+            <dd class="col-sm-9">@(Model.EndTime.HasValue? Model.EndTime.Value.ToString("dd MMM yyyy HH:mm zzz") : "None")</dd>
+            <dt class="col-sm-3">Time Zone</dt>
+            <dd class="col-sm-9">@Model.TimeZoneId</dd>
+            <dt class="col-sm-3">Type</dt>
+            <dd class="col-sm-9">@Model.Type</dd>
+            <dt class="col-sm-3">All Day</dt>
+            <dd class="col-sm-9">@(Model.IsAllDay ? "Yes" : "No")</dd>
+            <dt class="col-sm-3">Recurrence Rule</dt>
+            <dd class="col-sm-9">@(Model.RecurrenceRule ?? "None")</dd>
+            <dt class="col-sm-3">Group</dt>
+            <dd class="col-sm-9"><a asp-controller="Groups" asp-action="Details" asp-route-id="@Model.GroupId">@Model.Group.GroupName</a></dd>
+        </dl>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-primary">Back to Events</a>
+    @if (Model.Group.Members.Any(m => m.UserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
+    {
+        <a asp-action="Edit" asp-route-id="@Model.CalendarEventId" class="btn btn-secondary">Edit Event</a>
+    }
+</div>

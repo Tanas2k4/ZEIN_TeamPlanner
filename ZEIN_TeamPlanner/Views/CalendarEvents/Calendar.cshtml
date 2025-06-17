@@ -1,0 +1,89 @@
+﻿@{
+    ViewData["Title"] = "Calendar - " + ViewBag.GroupName;
+    var groupId = ViewBag.GroupId;
+}
+
+<h2>Calendar for @ViewBag.GroupName</h2>
+
+<p>
+    <a asp-action="Create" asp-route-groupId="@groupId" class="btn btn-primary">Create New Event</a>
+    <a asp-action="Index" asp-route-groupId="@groupId" class="btn btn-info">View List</a>
+    <a asp-controller="Groups" asp-action="Details" asp-route-id="@groupId" class="btn btn-secondary">Back to Group</a>
+</p>
+
+<div id="calendar"></div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                editable: true, // Enable drag-and-drop
+                events: {
+                    url: '@Url.Action("GetEvents", "CalendarEvents")',
+                    method: 'GET',
+                    extraParams: {
+                        groupId: @groupId
+                    }
+                },
+                eventClick: function (info) {
+                    window.location.href = '@Url.Action("Details", "CalendarEvents")/' + info.event.id;
+                },
+                eventDrop: function (info) {
+                    updateEventTime(info.event);
+                },
+                eventResize: function (info) {
+                    updateEventTime(info.event);
+                },
+                eventTimeFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                },
+                eventDidMount: function (info) {
+                    if (info.event.extendedProps.type === 'Meeting') {
+                        info.el.style.backgroundColor = '#3788d8';
+                    } else if (info.event.extendedProps.type === 'Deadline') {
+                        info.el.style.backgroundColor = '#d83737';
+                    } else if (info.event.extendedProps.type === 'Reminder') {
+                        info.el.style.backgroundColor = '#37d86f';
+                    }
+                }
+            });
+
+            function updateEventTime(event) {
+                fetch('@Url.Action("UpdateEventTime", "CalendarEvents")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({
+                        id: event.id,
+                        start: event.start.toISOString(),
+                        end: event.end ? event.end.toISOString() : null
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        alert('Không thể cập nhật thời gian sự kiện.');
+                        calendar.refetchEvents();
+                    }
+                })
+                .catch(() => {
+                    alert('Lỗi khi cập nhật sự kiện.');
+                    calendar.refetchEvents();
+                });
+            }
+
+            calendar.render();
+        });
+    </script>
+}

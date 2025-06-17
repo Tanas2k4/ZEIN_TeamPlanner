@@ -114,19 +114,75 @@ namespace ZEIN_TeamPlanner.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var group = await _context.Groups.FindAsync(id);
+            var group = await _context.Groups
+                .Include(g => g.Members)
+                .FirstOrDefaultAsync(g => g.GroupId == id);
+
             if (group == null)
             {
                 return NotFound();
             }
-            // Map to a DTO if needed
-            var dto = new CreateGroupDto
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!group.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin))
             {
+                return Forbid();
+            }
+
+            var dto = new EditGroupDto
+            {
+                GroupId = group.GroupId,
                 GroupName = group.GroupName,
-                Description = group.Description
-                // Map MemberIds if editing members
+                Description = group.Description,
+                MemberIds = group.Members
+                    .Where(m => m.LeftAt == null)
+                    .Select(m => m.UserId)
+                    .ToList()
             };
-            return View(dto);
+
+            var users = await _userManager.Users
+                .Select(u => new { u.Id, u.FullName })
+                .ToListAsync();
+            ViewBag.Users = users;
+            return View(dto); // Ensure EditGroupDto is passed
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(EditGroupDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var users = await _userManager.Users
+                    .Select(u => new { u.Id, u.FullName })
+                    .ToListAsync();
+                ViewBag.Users = users;
+                return View(dto); // Ensure EditGroupDto is passed
+            }
+
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var group = await _groupService.UpdateGroupAsync(dto, userId);
+                return RedirectToAction("Details", new { id = group.GroupId });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                var users = await _userManager.Users
+                    .Select(u => new { u.Id, u.FullName })
+                    .ToListAsync();
+                ViewBag.Users = users;
+                return View(dto); // Ensure EditGroupDto is passed
+            }
         }
     }
+
 }

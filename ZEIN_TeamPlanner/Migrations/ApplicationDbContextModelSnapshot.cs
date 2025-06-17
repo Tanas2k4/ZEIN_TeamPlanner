@@ -271,8 +271,8 @@ namespace ZEIN_TeamPlanner.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<DateTime>("EndTime")
-                        .HasColumnType("datetime2");
+                    b.Property<DateTimeOffset?>("EndTime")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<int>("GroupId")
                         .HasColumnType("int");
@@ -281,10 +281,16 @@ namespace ZEIN_TeamPlanner.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("RecurrenceRule")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
-                    b.Property<DateTime>("StartTime")
-                        .HasColumnType("datetime2");
+                    b.Property<DateTimeOffset>("StartTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -392,7 +398,7 @@ namespace ZEIN_TeamPlanner.Migrations
 
                     b.HasKey("PriorityId");
 
-                    b.ToTable("Priority");
+                    b.ToTable("Priorities");
                 });
 
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.TaskItem", b =>

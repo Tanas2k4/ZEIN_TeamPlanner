@@ -15,6 +15,7 @@ namespace TeamPlanner.Data
         public DbSet<GroupMember> GroupMembers { get; set; }
         public DbSet<TaskItem> TaskItems { get; set; }
         public DbSet<CalendarEvent> CalendarEvents { get; set; }
+        public DbSet<Priority> Priorities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

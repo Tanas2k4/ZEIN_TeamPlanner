@@ -234,3 +234,14 @@
         margin-left: 200px;
     }
 }
+
+.nav-link.active {
+    background-color: #00AE72;
+    color: white !important;
+    border-radius: 5px;
+}
+
+.btn-outline-dark.active {
+    background-color: #00AE72;
+    color: white;
+}

@@ -58,5 +58,63 @@ namespace ZEIN_TeamPlanner.Services
             await _context.SaveChangesAsync();
             return group;
         }
+        public async Task<Group> UpdateGroupAsync(EditGroupDto dto, string userId)
+        {
+            var group = await _context.Groups
+                .Include(g => g.Members)
+                .FirstOrDefaultAsync(g => g.GroupId == dto.GroupId);
+
+            if (group == null)
+                throw new KeyNotFoundException("Group không tồn tại.");
+
+            // Check if user is an admin
+            if (!group.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin))
+                throw new UnauthorizedAccessException("Chỉ admin mới có thể chỉnh sửa group.");
+
+            // Check for duplicate group name (excluding current group)
+            if (await _context.Groups.AnyAsync(g => g.GroupName == dto.GroupName && g.GroupId != dto.GroupId))
+                throw new InvalidOperationException("Tên Group đã tồn tại.");
+
+            // Update group details
+            group.GroupName = dto.GroupName;
+            group.Description = dto.Description;
+
+            // Update members
+            var currentMemberIds = group.Members
+                .Where(m => m.LeftAt == null)
+                .Select(m => m.UserId)
+                .ToList();
+
+            var newMemberIds = dto.MemberIds ?? new List<string>();
+
+            // Remove members not in new list
+            foreach (var member in group.Members.Where(m => m.LeftAt == null))
+            {
+                if (!newMemberIds.Contains(member.UserId) && member.UserId != group.CreatedByUserId)
+                {
+                    member.LeftAt = DateTime.UtcNow; // Soft delete
+                }
+            }
+
+            // Add new members
+            foreach (var memberId in newMemberIds)
+            {
+                if (!currentMemberIds.Contains(memberId) && memberId != group.CreatedByUserId)
+                {
+                    if (await _context.Users.AnyAsync(u => u.Id == memberId))
+                    {
+                        group.Members.Add(new GroupMember
+                        {
+                            UserId = memberId,
+                            Role = GroupRole.Member,
+                            JoinedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return group;
+        }
     }
 }

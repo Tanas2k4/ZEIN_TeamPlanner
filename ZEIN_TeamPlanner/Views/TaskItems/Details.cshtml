@@ -1,0 +1,45 @@
+﻿@using System.Security.Claims
+@model ZEIN_TeamPlanner.Models.TaskItem
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<h2>@Model.Title</h2>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Task Details</h5>
+        <dl class="row">
+            <dt class="col-sm-3">Title</dt>
+            <dd class="col-sm-9">@Model.Title</dd>
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@(Model.Description ?? "No description")</dd>
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">@Model.Status</dd>
+            <dt class="col-sm-3">Deadline</dt>
+            <dd class="col-sm-9">@(Model.Deadline?.ToString("dd MMM yyyy") ?? "No deadline")</dd>
+            <dt class="col-sm-3">Assigned To</dt>
+            <dd class="col-sm-9">@(Model.AssignedToUser?.FullName ?? "Unassigned")</dd>
+            <dt class="col-sm-3">Group</dt>
+            <dd class="col-sm-9"><a asp-controller="Groups" asp-action="Details" asp-route-id="@Model.GroupId">@Model.Group.GroupName</a></dd>
+            <dt class="col-sm-3">Priority</dt>
+            <dd class="col-sm-9">@(Model.Priority?.Name ?? "None")</dd>
+            <dt class="col-sm-3">Tags</dt>
+            <dd class="col-sm-9">@(Model.Tags ?? "None")</dd>
+            <dt class="col-sm-3">Created At</dt>
+            <dd class="col-sm-9">@Model.CreatedAt.ToString("dd MMM yyyy")</dd>
+            <dt class="col-sm-3">Completed At</dt>
+            <dd class="col-sm-9">@(Model.CompletedAt?.ToString("dd MMM yyyy") ?? "Not completed")</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-primary">Back to Tasks</a>
+    @if (Model.AssignedToUserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) ||
+        Model.Group.Members.Any(m => m.UserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
+    {
+        <a asp-action="Edit" asp-route-id="@Model.TaskItemId" class="btn btn-secondary">Edit Task</a>
+    }
+</div>

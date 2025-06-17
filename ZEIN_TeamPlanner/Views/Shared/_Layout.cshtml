@@ -17,6 +17,7 @@
     <link rel="icon" type="image/x-icon" href="~/zeinIcon.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css" rel="stylesheet" />
     @RenderSection("Styles", required: false)
     <link href="~/css/_layout.css?v=@DateTime.Now.Ticks" rel="stylesheet" />
 </head>
@@ -75,7 +76,7 @@
         <!-- Topbar -->
         <div class="topbar d-flex justify-content-between align-items-center shadow-sm">
             <div class="btn-group" role="group" aria-label="Navigation group">
-                <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "TaskItems" ? "active" : "")" style="border: none;" asp-controller="TaskItems" asp-action="Index">
+                <a class="btn btn-outline-dark d-flex align-items-center" style="border: none;" asp-controller="TaskItems" asp-action="GlobalTasks">
                     <i class="bi bi-list-task me-1"></i> Tasks
                 </a>
                 <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Groups" ? "active" : "")" style="border: none;" asp-controller="Groups" asp-action="Index">
@@ -91,7 +92,12 @@
             </form>
 
             <div class="icon-group d-flex align-items-center gap-3">
-                <a asp-controller="CalendarEvents" asp-action="Index" class="custom-icon-btn" data-bs-toggle="tooltip" title="Calendar"><i class="bi bi-calendar2-week"></i></a>
+                @* <li class="nav-item">
+                    <a class="nav-link" asp-controller="CalendarEvents" asp-action="GlobalCalendar">
+                        <span class="oi oi-calendar"></span> Calendar
+                    </a>
+                </li> *@
+                <a asp-controller="CalendarEvents" asp-action="GlobalCalendar" class="custom-icon-btn" data-bs-toggle="tooltip" title="Calendar"><i class="bi bi-calendar2-week"></i></a>
                 <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Help"><i class="bi bi-question-circle-fill"></i></a>
                 <a asp-controller="Notifications" asp-action="Index" class="custom-icon-btn" data-bs-toggle="tooltip" title="Notifications"><i class="bi bi-bell-fill"></i></a>
                 <a class="btn text-white animate__animated animate__pulse animate__infinite" style="background-color: #00AE72;" asp-controller="Groups" asp-action="Create">

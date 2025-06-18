@@ -14,11 +14,12 @@ namespace ZEIN_TeamPlanner.Controllers
     public class CalendarEventsController : Controller
     {
         private readonly IEventService _eventService;
+        private readonly IGroupService _groupService;
         private readonly ApplicationDbContext _context;
-
-        public CalendarEventsController(IEventService eventService, ApplicationDbContext context)
+        public CalendarEventsController(IEventService eventService, IGroupService groupService, ApplicationDbContext context)
         {
             _eventService = eventService;
+            _groupService = groupService;
             _context = context;
         }
 
@@ -26,19 +27,18 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Index(int groupId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var group = await _context.Groups
-                .Include(g => g.Members)
-                .FirstOrDefaultAsync(g => g.GroupId == groupId);
-
-            if (group == null || !group.Members.Any(m => m.UserId == userId && m.LeftAt == null) && group.CreatedByUserId != userId)
+            if (!await _groupService.CanAccessGroupAsync(groupId, userId))
                 return Forbid();
 
+            var isMember = !await _groupService.IsUserAdminAsync(groupId, userId);
             var events = await _context.CalendarEvents
                 .Where(e => e.GroupId == groupId)
+                .Include(e => e.Group)
                 .ToListAsync();
 
             ViewBag.GroupId = groupId;
-            ViewBag.GroupName = group.GroupName;
+            ViewBag.GroupName = (await _context.Groups.FindAsync(groupId))?.GroupName;
+            ViewBag.IsMember = isMember; // Dùng để ẩn nút Create/Edit/Delete với Member
             return View(events);
         }
 
@@ -46,15 +46,12 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Calendar(int groupId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var group = await _context.Groups
-                .Include(g => g.Members)
-                .FirstOrDefaultAsync(g => g.GroupId == groupId);
-
-            if (group == null || !group.Members.Any(m => m.UserId == userId && m.LeftAt == null) && group.CreatedByUserId != userId)
+            if (!await _groupService.CanAccessGroupAsync(groupId, userId))
                 return Forbid();
 
+            var group = await _context.Groups.FindAsync(groupId);
             ViewBag.GroupId = groupId;
-            ViewBag.GroupName = group.GroupName;
+            ViewBag.GroupName = group?.GroupName;
             return View();
         }
 
@@ -79,15 +76,12 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> GetEvents(int groupId, DateTimeOffset start, DateTimeOffset end)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var group = await _context.Groups
-                .Include(g => g.Members)
-                .FirstOrDefaultAsync(g => g.GroupId == groupId);
-
-            if (group == null || !group.Members.Any(m => m.UserId == userId && m.LeftAt == null) && group.CreatedByUserId != userId)
+            if (!await _groupService.CanAccessGroupAsync(groupId, userId))
                 return Forbid();
 
             var events = await _context.CalendarEvents
                 .Where(e => e.GroupId == groupId && e.StartTime >= start && (e.EndTime == null || e.EndTime <= end))
+                .Include(e => e.Group)
                 .Select(e => new
                 {
                     id = e.CalendarEventId,
@@ -155,7 +149,7 @@ namespace ZEIN_TeamPlanner.Controllers
             if (calendarEvent == null)
                 return NotFound();
 
-            var isAdmin = calendarEvent.Group.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin);
+            var isAdmin = await _groupService.IsUserAdminAsync(calendarEvent.GroupId, userId);
             if (!isAdmin)
                 return Forbid();
 
@@ -173,15 +167,12 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Create(int groupId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var group = await _context.Groups
-                .Include(g => g.Members)
-                .FirstOrDefaultAsync(g => g.GroupId == groupId);
-
-            if (group == null || !group.Members.Any(m => m.UserId == userId && m.LeftAt == null))
+            if (!await _groupService.IsUserAdminAsync(groupId, userId))
                 return Forbid();
 
+            var group = await _context.Groups.FindAsync(groupId);
             ViewBag.GroupId = groupId;
-            ViewBag.GroupName = group.GroupName;
+            ViewBag.GroupName = group?.GroupName;
             ViewBag.TimeZones = GetTimeZoneSelectList();
             return View(new CreateEventDto { GroupId = groupId, StartTime = DateTimeOffset.Now, TimeZoneId = "Asia/Ho_Chi_Minh" });
         }
@@ -190,6 +181,10 @@ namespace ZEIN_TeamPlanner.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateEventDto dto)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!await _groupService.IsUserAdminAsync(dto.GroupId, userId))
+                return Forbid();
+
             if (!ModelState.IsValid)
             {
                 ViewBag.GroupId = dto.GroupId;
@@ -201,13 +196,8 @@ namespace ZEIN_TeamPlanner.Controllers
 
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var calendarEvent = await _eventService.CreateEventAsync(dto, userId);
+                await _eventService.CreateEventAsync(dto, userId);
                 return RedirectToAction("Index", new { groupId = dto.GroupId });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
             }
             catch (InvalidOperationException ex)
             {
@@ -225,7 +215,7 @@ namespace ZEIN_TeamPlanner.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var calendarEvent = await _context.CalendarEvents
-                .Include(e => e.Group).ThenInclude(g => g.Members)
+                .Include(e => e.Group)
                 .FirstOrDefaultAsync(e => e.CalendarEventId == id);
 
             if (calendarEvent == null || !await _eventService.CanAccessEventAsync(id, userId))
@@ -239,14 +229,13 @@ namespace ZEIN_TeamPlanner.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var calendarEvent = await _context.CalendarEvents
-                .Include(e => e.Group).ThenInclude(g => g.Members)
+                .Include(e => e.Group)
                 .FirstOrDefaultAsync(e => e.CalendarEventId == id);
 
             if (calendarEvent == null)
                 return NotFound();
 
-            var isAdmin = calendarEvent.Group.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin);
-            if (!isAdmin)
+            if (!await _groupService.IsUserAdminAsync(calendarEvent.GroupId, userId))
                 return Forbid();
 
             var dto = new EditEventDto
@@ -273,6 +262,10 @@ namespace ZEIN_TeamPlanner.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(EditEventDto dto)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!await _groupService.IsUserAdminAsync(dto.GroupId, userId))
+                return Forbid();
+
             if (!ModelState.IsValid)
             {
                 ViewBag.GroupId = dto.GroupId;
@@ -284,17 +277,12 @@ namespace ZEIN_TeamPlanner.Controllers
 
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var calendarEvent = await _eventService.UpdateEventAsync(dto, userId);
+                await _eventService.UpdateEventAsync(dto, userId);
                 return RedirectToAction("Index", new { groupId = dto.GroupId });
             }
             catch (KeyNotFoundException)
             {
                 return NotFound();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
             }
             catch (InvalidOperationException ex)
             {

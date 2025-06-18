@@ -354,6 +354,44 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.ToTable("Groups");
                 });
 
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.GroupInvitation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsAccepted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.ToTable("GroupInvitations");
+                });
+
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.GroupMember", b =>
                 {
                     b.Property<int>("GroupId")
@@ -524,6 +562,17 @@ namespace ZEIN_TeamPlanner.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.GroupInvitation", b =>
+                {
+                    b.HasOne("ZEIN_TeamPlanner.Models.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
                 });
 
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.GroupMember", b =>

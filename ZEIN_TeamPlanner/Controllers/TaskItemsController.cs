@@ -13,12 +13,14 @@ namespace ZEIN_TeamPlanner.Controllers
     public class TaskItemsController : Controller
     {
         private readonly ITaskService _taskService;
+        private readonly IGroupService _groupService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _context;
 
-        public TaskItemsController(ITaskService taskService, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+        public TaskItemsController(ITaskService taskService, IGroupService groupService, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
         {
             _taskService = taskService;
+            _groupService = groupService;
             _userManager = userManager;
             _context = context;
         }
@@ -27,13 +29,10 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Index(int groupId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var group = await _context.Groups
-                .Include(g => g.Members)
-                .FirstOrDefaultAsync(g => g.GroupId == groupId);
-
-            if (group == null || !group.Members.Any(m => m.UserId == userId && m.LeftAt == null) && group.CreatedByUserId != userId)
+            if (!await _groupService.CanAccessGroupAsync(groupId, userId))
                 return Forbid();
 
+            var isMember = !await _groupService.IsUserAdminAsync(groupId, userId);
             var tasks = await _context.TaskItems
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Priority)
@@ -41,26 +40,81 @@ namespace ZEIN_TeamPlanner.Controllers
                 .ToListAsync();
 
             ViewBag.GroupId = groupId;
-            ViewBag.GroupName = group.GroupName;
+            ViewBag.GroupName = (await _context.Groups.FindAsync(groupId))?.GroupName;
+            ViewBag.IsMember = isMember; // Ẩn nút Create/Edit/Delete với Member
             return View(tasks);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GlobalTasks()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var groupIds = await _context.GroupMembers
+                .Where(gm => gm.UserId == userId && gm.LeftAt == null)
+                .Select(gm => gm.GroupId)
+                .Union(_context.Groups.Where(g => g.CreatedByUserId == userId).Select(g => g.GroupId))
+                .ToListAsync();
+
+            var tasks = await _context.TaskItems
+                .Include(t => t.Group).ThenInclude(g => g.Members) // Thêm include Group.Members
+                .Include(t => t.Priority)
+                .Include(t => t.AssignedToUser)
+                .Where(t => groupIds.Contains(t.GroupId))
+                .ToListAsync();
+
+            if (!tasks.Any())
+            {
+                ViewBag.Message = "Bạn chưa có nhiệm vụ nào. Hãy tham gia hoặc tạo một nhóm để bắt đầu.";
+            }
+
+            return View(tasks);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var task = await _context.TaskItems
+                .Include(t => t.Group)
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.Priority)
+                .FirstOrDefaultAsync(t => t.TaskItemId == id);
+
+            if (task == null || !await _taskService.CanAccessTaskAsync(id, userId))
+                return Forbid();
+
+            ViewBag.IsMember = !await _groupService.IsUserAdminAsync(task.GroupId, userId);
+            return View(task);
         }
 
         [HttpGet]
         public async Task<IActionResult> Create(int groupId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var group = await _context.Groups
-                .Include(g => g.Members)
-                .FirstOrDefaultAsync(g => g.GroupId == groupId);
-
-            if (group == null || !group.Members.Any(m => m.UserId == userId && m.LeftAt == null))
+            if (!await _groupService.IsUserAdminAsync(groupId, userId))
                 return Forbid();
 
+            // Lấy danh sách thành viên từ GroupMembers
             var members = await _context.GroupMembers
                 .Where(gm => gm.GroupId == groupId && gm.LeftAt == null)
                 .Include(gm => gm.User)
                 .Select(gm => new { gm.UserId, gm.User.FullName })
                 .ToListAsync();
+
+            // Lấy thông tin nhóm và người tạo nhóm
+            var group = await _context.Groups
+                .Include(g => g.CreatedByUser)
+                .FirstOrDefaultAsync(g => g.GroupId == groupId);
+
+            if (group == null)
+                return NotFound();
+
+            // Thêm người tạo nhóm vào danh sách nếu chưa có
+            if (!members.Any(m => m.UserId == group.CreatedByUserId))
+            {
+                members.Add(new { UserId = group.CreatedByUserId, FullName = group.CreatedByUser?.FullName ?? "Admin" });
+            }
+
             var priorities = await _context.Priorities
                 .Select(p => new { p.PriorityId, p.Name })
                 .ToListAsync();
@@ -77,6 +131,10 @@ namespace ZEIN_TeamPlanner.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateTaskDto dto)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!await _groupService.IsUserAdminAsync(dto.GroupId, userId))
+                return Forbid();
+
             if (!ModelState.IsValid)
             {
                 var members = await _context.GroupMembers
@@ -90,20 +148,14 @@ namespace ZEIN_TeamPlanner.Controllers
                 ViewBag.Members = members;
                 ViewBag.Priorities = priorities;
                 ViewBag.GroupId = dto.GroupId;
-                var group = await _context.Groups.FindAsync(dto.GroupId);
-                ViewBag.GroupName = group?.GroupName;
+                ViewBag.GroupName = (await _context.Groups.FindAsync(dto.GroupId))?.GroupName;
                 return View(dto);
             }
 
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var task = await _taskService.CreateTaskAsync(dto, userId);
+                await _taskService.CreateTaskAsync(dto, userId);
                 return RedirectToAction("Index", new { groupId = dto.GroupId });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
             }
             catch (InvalidOperationException ex)
             {
@@ -119,26 +171,9 @@ namespace ZEIN_TeamPlanner.Controllers
                 ViewBag.Members = members;
                 ViewBag.Priorities = priorities;
                 ViewBag.GroupId = dto.GroupId;
-                var group = await _context.Groups.FindAsync(dto.GroupId);
-                ViewBag.GroupName = group?.GroupName;
+                ViewBag.GroupName = (await _context.Groups.FindAsync(dto.GroupId))?.GroupName;
                 return View(dto);
             }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Details(int id)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var task = await _context.TaskItems
-                .Include(t => t.Group).ThenInclude(g => g.Members)
-                .Include(t => t.AssignedToUser)
-                .Include(t => t.Priority)
-                .FirstOrDefaultAsync(t => t.TaskItemId == id);
-
-            if (task == null || !await _taskService.CanAccessTaskAsync(id, userId))
-                return Forbid();
-
-            return View(task);
         }
 
         [HttpGet]
@@ -146,14 +181,13 @@ namespace ZEIN_TeamPlanner.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var task = await _context.TaskItems
-                .Include(t => t.Group).ThenInclude(g => g.Members)
+                .Include(t => t.Group)
                 .FirstOrDefaultAsync(t => t.TaskItemId == id);
 
             if (task == null)
                 return NotFound();
 
-            var isAdmin = task.Group.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin);
-            if (task.AssignedToUserId != userId && !isAdmin)
+            if (!await _groupService.IsUserAdminAsync(task.GroupId, userId))
                 return Forbid();
 
             var dto = new EditTaskDto
@@ -191,6 +225,10 @@ namespace ZEIN_TeamPlanner.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(EditTaskDto dto)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!await _groupService.IsUserAdminAsync(dto.GroupId, userId))
+                return Forbid();
+
             if (!ModelState.IsValid)
             {
                 var members = await _context.GroupMembers
@@ -204,24 +242,18 @@ namespace ZEIN_TeamPlanner.Controllers
                 ViewBag.Members = members;
                 ViewBag.Priorities = priorities;
                 ViewBag.GroupId = dto.GroupId;
-                var group = await _context.Groups.FindAsync(dto.GroupId);
-                ViewBag.GroupName = group?.GroupName;
+                ViewBag.GroupName = (await _context.Groups.FindAsync(dto.GroupId))?.GroupName;
                 return View(dto);
             }
 
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var task = await _taskService.UpdateTaskAsync(dto, userId);
+                await _taskService.UpdateTaskAsync(dto, userId);
                 return RedirectToAction("Index", new { groupId = dto.GroupId });
             }
             catch (KeyNotFoundException)
             {
                 return NotFound();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
             }
             catch (InvalidOperationException ex)
             {
@@ -237,42 +269,17 @@ namespace ZEIN_TeamPlanner.Controllers
                 ViewBag.Members = members;
                 ViewBag.Priorities = priorities;
                 ViewBag.GroupId = dto.GroupId;
-                var group = await _context.Groups.FindAsync(dto.GroupId);
-                ViewBag.GroupName = group?.GroupName;
+                ViewBag.GroupName = (await _context.Groups.FindAsync(dto.GroupId))?.GroupName;
                 return View(dto);
             }
         }
 
         [HttpGet]
-        public async Task<IActionResult> GlobalTasks()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var groupIds = await _context.GroupMembers
-                .Where(gm => gm.UserId == userId && gm.LeftAt == null)
-                .Select(gm => gm.GroupId)
-                .Union(_context.Groups.Where(g => g.CreatedByUserId == userId).Select(g => g.GroupId))
-                .ToListAsync();
-
-            var tasks = await _context.TaskItems
-                .Include(t => t.Group).ThenInclude(g => g.Members)
-                .Include(t => t.Priority)
-                .Include(t => t.AssignedToUser)
-                .Where(t => groupIds.Contains(t.GroupId))
-                .ToListAsync();
-
-            if (!tasks.Any())
-            {
-                ViewBag.Message = "Bạn chưa có nhiệm vụ nào. Hãy tham gia hoặc tạo một nhóm để bắt đầu.";
-            }
-
-            return View(tasks);
-        }
-        [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var task = await _context.TaskItems
-                .Include(t => t.Group).ThenInclude(g => g.Members)
+                .Include(t => t.Group)
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Priority)
                 .FirstOrDefaultAsync(t => t.TaskItemId == id);
@@ -280,8 +287,7 @@ namespace ZEIN_TeamPlanner.Controllers
             if (task == null)
                 return NotFound();
 
-            var isAdmin = task.Group?.Members?.Any(m => m.UserId == userId && m.Role == GroupRole.Admin) == true;
-            if (task.AssignedToUserId != userId && !isAdmin)
+            if (!await _groupService.IsUserAdminAsync(task.GroupId, userId))
                 return Forbid();
 
             return View(task);
@@ -291,19 +297,22 @@ namespace ZEIN_TeamPlanner.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            var task = await _context.TaskItems.FindAsync(id);
+            if (task == null)
+                return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!await _groupService.IsUserAdminAsync(task.GroupId, userId))
+                return Forbid();
+
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 await _taskService.DeleteTaskAsync(id, userId);
-                return RedirectToAction(nameof(GlobalTasks));
+                return RedirectToAction(nameof(Index), new { groupId = task.GroupId });
             }
             catch (KeyNotFoundException)
             {
                 return NotFound();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
             }
         }
     }

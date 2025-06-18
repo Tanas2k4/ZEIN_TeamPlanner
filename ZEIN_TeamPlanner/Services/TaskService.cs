@@ -7,31 +7,34 @@ namespace ZEIN_TeamPlanner.Services
     public class TaskService : ITaskService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IGroupService _groupService;
 
-        public TaskService(ApplicationDbContext context)
+        public TaskService(ApplicationDbContext context, IGroupService groupService)
         {
             _context = context;
+            _groupService = groupService;
         }
 
         public async Task<TaskItem> CreateTaskAsync(CreateTaskDto dto, string userId)
         {
-            var isMember = await _context.GroupMembers
-                .AnyAsync(gm => gm.GroupId == dto.GroupId && gm.UserId == userId && gm.LeftAt == null);
-            if (!isMember)
-                throw new UnauthorizedAccessException("Bạn không phải là thành viên của group này.");
+            if (!await _groupService.IsUserAdminAsync(dto.GroupId, userId))
+                throw new UnauthorizedAccessException("Bạn không có quyền tạo nhiệm vụ trong nhóm này.");
 
             if (!string.IsNullOrEmpty(dto.AssignedToUserId))
             {
                 var isValidAssignee = await _context.GroupMembers
-                    .AnyAsync(gm => gm.GroupId == dto.GroupId && gm.UserId == dto.AssignedToUserId && gm.LeftAt == null);
+                    .AnyAsync(gm => gm.GroupId == dto.GroupId && gm.UserId == dto.AssignedToUserId && gm.LeftAt == null)
+                    || await _context.Groups
+                        .AnyAsync(g => g.GroupId == dto.GroupId && g.CreatedByUserId == dto.AssignedToUserId);
                 if (!isValidAssignee)
-                    throw new InvalidOperationException("Người được giao không phải là thành viên của group.");
+                    throw new InvalidOperationException("Người được giao không phải là thành viên hoặc người tạo nhóm.");
             }
 
             if (dto.PriorityId.HasValue && !await _context.Priorities.AnyAsync(p => p.PriorityId == dto.PriorityId))
                 throw new InvalidOperationException("Ưu tiên không hợp lệ.");
 
-            if (dto.Deadline.HasValue && dto.Deadline <= DateTime.UtcNow)
+            // Validate hạn chót
+            if (dto.Deadline.HasValue && dto.Deadline <= DateTime.Now)
                 throw new InvalidOperationException("Hạn chót phải lớn hơn thời điểm hiện tại.");
 
             var task = new TaskItem
@@ -44,8 +47,8 @@ namespace ZEIN_TeamPlanner.Services
                 GroupId = dto.GroupId,
                 PriorityId = dto.PriorityId,
                 Tags = dto.Tags,
-                CreatedAt = DateTime.UtcNow,
-                CompletedAt = dto.Status == TaskItem.TaskStatus.Done ? DateTime.UtcNow : null
+                CreatedAt = DateTime.Now,
+                CompletedAt = dto.Status == TaskItem.TaskStatus.Done ? DateTime.Now : null
             };
 
             _context.TaskItems.Add(task);
@@ -62,23 +65,23 @@ namespace ZEIN_TeamPlanner.Services
             if (task == null)
                 throw new KeyNotFoundException("Nhiệm vụ không tồn tại.");
 
-            var isAdmin = task.Group.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin);
-            if (task.AssignedToUserId != userId && !isAdmin)
+            if (!await _groupService.IsUserAdminAsync(task.GroupId, userId))
                 throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa nhiệm vụ này.");
 
             if (!string.IsNullOrEmpty(dto.AssignedToUserId))
             {
                 var isValidAssignee = await _context.GroupMembers
-                    .AnyAsync(gm => gm.GroupId == task.GroupId && gm.UserId == dto.AssignedToUserId && gm.LeftAt == null);
+                    .AnyAsync(gm => gm.GroupId == task.GroupId && gm.UserId == dto.AssignedToUserId && gm.LeftAt == null)
+                    || await _context.Groups
+                        .AnyAsync(g => g.GroupId == task.GroupId && g.CreatedByUserId == dto.AssignedToUserId);
                 if (!isValidAssignee)
-                    throw new InvalidOperationException("Người được giao không phải là thành viên của group.");
+                    throw new InvalidOperationException("Người được giao không phải là thành viên hoặc người tạo nhóm.");
             }
 
             if (dto.PriorityId.HasValue && !await _context.Priorities.AnyAsync(p => p.PriorityId == dto.PriorityId))
                 throw new InvalidOperationException("Ưu tiên không hợp lệ.");
 
-            // Check if the priority is valid only if it is provided
-            if (dto.Deadline.HasValue && dto.Deadline <= DateTime.UtcNow)  
+            if (dto.Deadline.HasValue && dto.Deadline <= DateTime.Now)
                 throw new InvalidOperationException("Hạn chót phải lớn hơn thời điểm hiện tại.");
 
             task.Title = dto.Title;
@@ -88,7 +91,7 @@ namespace ZEIN_TeamPlanner.Services
             task.AssignedToUserId = dto.AssignedToUserId;
             task.PriorityId = dto.PriorityId;
             task.Tags = dto.Tags;
-            task.CompletedAt = dto.Status == TaskItem.TaskStatus.Done ? DateTime.UtcNow : null;
+            task.CompletedAt = dto.Status == TaskItem.TaskStatus.Done ? DateTime.Now : null;
 
             await _context.SaveChangesAsync();
             return task;
@@ -116,8 +119,7 @@ namespace ZEIN_TeamPlanner.Services
             if (task == null)
                 throw new KeyNotFoundException("Nhiệm vụ không tồn tại.");
 
-            var isAdmin = task.Group.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin);
-            if (task.AssignedToUserId != userId && !isAdmin)
+            if (!await _groupService.IsUserAdminAsync(task.GroupId, userId))
                 throw new UnauthorizedAccessException("Bạn không có quyền xóa nhiệm vụ này.");
 
             _context.TaskItems.Remove(task);

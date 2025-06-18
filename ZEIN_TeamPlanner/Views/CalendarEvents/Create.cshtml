@@ -30,7 +30,9 @@
     </div>
     <div class="form-group mb-3">
         <label asp-for="TimeZoneId" class="form-label"></label>
-        <select asp-for="TimeZoneId" class="form-select" asp-items="ViewBag.TimeZones"></select>
+        <select asp-for="TimeZoneId" class="form-select" asp-items="ViewBag.TimeZones">
+            <option value="Asia/Ho_Chi_Minh" selected>Asia/Ho_Chi_Minh</option>
+        </select>
         <span asp-validation-for="TimeZoneId" class="text-danger"></span>
     </div>
     <div class="form-group mb-3">
@@ -94,8 +96,10 @@
         </div>
         <span asp-validation-for="RecurrenceRule" class="text-danger"></span>
     </div>
-    <button type="submit" class="btn btn-primary">Create Event</button>
-    <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-secondary">Cancel</a>
+    <div class="form-group mb-3">
+        <button type="submit" class="btn btn-primary">Create Event</button>
+        <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-secondary">Cancel</a>
+    </div>
 </form>
 
 @section Scripts {
@@ -109,13 +113,12 @@
 
             form.addEventListener('submit', function (event) {
                 let isValid = true;
-                const now = new Date();
                 const startTime = new Date(startTimeInput.value);
                 const endTime = endTimeInput.value ? new Date(endTimeInput.value) : null;
 
-                if (!startTimeInput.value || startTime <= now) {
+                if (!startTimeInput.value) {
                     isValid = false;
-                    startTimeInput.setCustomValidity("Thời gian bắt đầu phải lớn hơn thời điểm hiện tại.");
+                    startTimeInput.setCustomValidity("Thời gian bắt đầu là bắt buộc.");
                     startTimeInput.reportValidity();
                 } else {
                     startTimeInput.setCustomValidity("");
@@ -146,7 +149,7 @@
                 const freq = freqSelect.value;
                 const interval = parseInt(document.getElementById('rrule-interval').value) || 1;
                 const end = endSelect.value;
-
+        
                 let options = {
                     freq: RRule[freq],
                     interval: interval

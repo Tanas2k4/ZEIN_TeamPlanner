@@ -1,17 +1,17 @@
-﻿@using System.Security.Claims
-@model IEnumerable<ZEIN_TeamPlanner.Models.TaskItem>
+﻿@model IEnumerable<ZEIN_TeamPlanner.Models.TaskItem>
 
 @{
     ViewData["Title"] = "Tasks - " + ViewBag.GroupName;
-    var groupId = ViewBag.GroupId;
 }
 
 <h2>Tasks in @ViewBag.GroupName</h2>
 
-<p>
-    <a asp-action="Create" asp-route-groupId="@groupId" class="btn btn-primary">Create New Task</a>
-    <a asp-controller="Groups" asp-action="Details" asp-route-id="@groupId" class="btn btn-secondary">Back to Group</a>
-</p>
+@if (!ViewBag.IsMember)
+{
+    <p>
+        <a asp-action="Create" asp-route-groupId="@ViewBag.GroupId" class="btn btn-primary">Create New Task</a>
+    </p>
+}
 
 @if (Model.Any())
 {
@@ -19,32 +19,40 @@
         <thead>
             <tr>
                 <th>Title</th>
+                <th>Description</th>
                 <th>Status</th>
                 <th>Deadline</th>
                 <th>Assigned To</th>
                 <th>Priority</th>
                 <th>Tags</th>
-                <th>Actions</th>
+                <th>Completed At</th>
+                @if (!ViewBag.IsMember)
+                {
+                    <th>Actions</th>
+                }
             </tr>
         </thead>
         <tbody>
             @foreach (var task in Model)
             {
                 <tr>
-                    <td>@task.Title</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@task.TaskItemId">@task.Title</a>
+                    </td>
+                    <td>@(task.Description?.Length > 50 ? task.Description.Substring(0, 50) + "..." : task.Description ?? "")</td>
                     <td>@task.Status</td>
-                    <td>@(task.Deadline?.ToString("dd MMM yyyy") ?? "No deadline")</td>
+                    <td>@(task.Deadline?.ToString("dd MMMM yyyy") ?? "No deadline")</td>
                     <td>@(task.AssignedToUser?.FullName ?? "Unassigned")</td>
                     <td>@(task.Priority?.Name ?? "None")</td>
-                    <td>@(task.Tags ?? "None")</td>
-                    <td>
-                        <a asp-action="Details" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-info">Details</a>
-                        @if (task.AssignedToUserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) ||
-                                        task.Group.Members.Any(m => m.UserId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
-                        {
+                    <td>@(task.Tags ?? "")</td>
+                    <td>@(task.CompletedAt?.ToString("dd MMMM yyyy") ?? "Not completed")</td>
+                    @if (!ViewBag.IsMember)
+                    {
+                        <td>
                             <a asp-action="Edit" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-secondary">Edit</a>
-                        }
-                    </td>
+                            <a asp-action="Delete" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                    }
                 </tr>
             }
         </tbody>
@@ -52,5 +60,10 @@
 }
 else
 {
-    <p>No tasks in this group. Create one to get started!</p>
+    <p>No tasks in this group.</p>
 }
+
+<div class="mt-3">
+    <a asp-controller="Groups" asp-action="Details" asp-route-id="@ViewBag.GroupId" class="btn btn-primary">Back to Group</a>
+    <a asp-action="GlobalTasks" class="btn btn-info">View All Tasks</a>
+</div>

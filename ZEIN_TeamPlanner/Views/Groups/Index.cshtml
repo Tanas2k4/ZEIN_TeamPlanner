@@ -6,6 +6,15 @@
 
 <h2>My Groups</h2>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
 <p>
     <a asp-action="Create" class="btn btn-primary">Create New Group</a>
 </p>
@@ -28,7 +37,7 @@
                 <tr>
                     <td>@group.GroupName</td>
                     <td>@(group.Description?.Length > 50 ? group.Description.Substring(0, 50) + "..." : group.Description)</td>
-                    <td>@group.Members.Count</td>
+                    <td>@group.Members.Count(m => m.LeftAt == null)</td>
                     <td>@group.CreateAt.ToString("dd MMM yyyy")</td>
                     <td>
                         <a asp-action="Details" asp-route-id="@group.GroupId" class="btn btn-sm btn-info">Details</a>

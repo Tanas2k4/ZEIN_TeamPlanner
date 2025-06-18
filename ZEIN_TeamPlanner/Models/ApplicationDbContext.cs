@@ -16,7 +16,7 @@ namespace TeamPlanner.Data
         public DbSet<TaskItem> TaskItems { get; set; }
         public DbSet<CalendarEvent> CalendarEvents { get; set; }
         public DbSet<Priority> Priorities { get; set; }
-
+        public DbSet<GroupInvitation> GroupInvitations { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -63,6 +63,13 @@ namespace TeamPlanner.Data
                 .HasOne(e => e.Group)
                 .WithMany(g => g.Events)
                 .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            
+            builder.Entity<GroupInvitation>()
+                .HasOne(gi => gi.Group)
+                .WithMany()
+                .HasForeignKey(gi => gi.GroupId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Group - CreatedByUser

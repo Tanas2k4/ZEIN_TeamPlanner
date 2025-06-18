@@ -6,11 +6,12 @@
 
 <h2>Create Task in @ViewBag.GroupName</h2>
 
-<form asp-action="Create" method="post" id="createTaskForm">
+
+<form asp-action="Create" method="post">
     <input type="hidden" asp-for="GroupId" />
     <div class="form-group mb-3">
         <label asp-for="Title" class="form-label"></label>
-        <input asp-for="Title" class="form-control" />
+        <input asp-for="Title" class="form-control" required />
         <span asp-validation-for="Title" class="text-danger"></span>
     </div>
     <div class="form-group mb-3">
@@ -19,23 +20,22 @@
         <span asp-validation-for="Description" class="text-danger"></span>
     </div>
     <div class="form-group mb-3">
-        <label asp-for="Deadline" class="form-label"></label>
-        <input asp-for="Deadline" class="form-control" type="date" id="deadline" />
-        <span asp-validation-for="Deadline" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
         <label asp-for="Status" class="form-label"></label>
         <select asp-for="Status" class="form-select">
-            <option value="@TaskItem.TaskStatus.ToDo">To Do</option>
-            <option value="@TaskItem.TaskStatus.InProgress">In Progress</option>
-            <option value="@TaskItem.TaskStatus.Done">Done</option>
-            <option value="@TaskItem.TaskStatus.Blocked">Blocked</option>
+            <option value="ToDo">To Do</option>
+            <option value="InProgress">In Progress</option>
+            <option value="Done">Done</option>
         </select>
         <span asp-validation-for="Status" class="text-danger"></span>
     </div>
     <div class="form-group mb-3">
+        <label asp-for="Deadline" class="form-label"></label>
+        <input asp-for="Deadline" class="form-control" type="datetime-local" value="@(Model.Deadline.HasValue? Model.Deadline.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
+        <span asp-validation-for="Deadline" class="text-danger"></span>
+    </div>
+    <div class="form-group mb-3">
         <label asp-for="AssignedToUserId" class="form-label">Assigned To</label>
-        <select asp-for="AssignedToUserId" class="form-select" id="assigneeSelect">
+        <select asp-for="AssignedToUserId" class="form-select">
             <option value="">Unassigned</option>
             @foreach (var member in ViewBag.Members)
             {
@@ -46,8 +46,8 @@
     </div>
     <div class="form-group mb-3">
         <label asp-for="PriorityId" class="form-label">Priority</label>
-        <select asp-for="PriorityId" class="form-select" id="prioritySelect">
-            <option value="">None</option>
+        <select asp-for="PriorityId" class="form-select">
+            <option value="">No Priority</option>
             @foreach (var priority in ViewBag.Priorities)
             {
                 <option value="@priority.PriorityId">@priority.Name</option>
@@ -57,52 +57,15 @@
     </div>
     <div class="form-group mb-3">
         <label asp-for="Tags" class="form-label">Tags (comma-separated)</label>
-        <input asp-for="Tags" class="form-control" placeholder="e.g., urgent, feature" />
+        <input asp-for="Tags" class="form-control" />
         <span asp-validation-for="Tags" class="text-danger"></span>
     </div>
+    <div class="form-group mb-3">
+        <button type="submit" class="btn btn-primary">Create Task</button>
+        <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-secondary">Cancel</a>
     </div>
-    <button type="submit" class="btn btn-primary">Create Task</button>
-    <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-secondary">Cancel</a>
 </form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#assigneeSelect').select2({
-                placeholder: "Select assignee",
-                allowClear: true
-            });
-            $('#prioritySelect').select2({
-                placeholder: "Select priority",
-                allowClear: true
-            });
-
-            const form = document.getElementById('createTaskForm');
-            const deadlineInput = document.getElementById('deadline');
-
-            form.addEventListener('submit', function (event) {
-                let isValid = true;
-                const now = new Date().toISOString().split('T')[0];
-                const deadline = deadlineInput.value;
-
-                if (deadline && deadline <= now) {
-                    isValid = false;
-                    deadlineInput.setCustomValidity("Hạn chót phải lớn hơn thời điểm hiện tại.");
-                    deadlineInput.reportValidity();
-                } else {
-                    deadlineInput.setCustomValidity("");
-                }
-
-                if (!isValid) {
-                    event.preventDefault();
-                }
-            });
-        });
-    </script>
-}
-
-@section Styles {
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 }

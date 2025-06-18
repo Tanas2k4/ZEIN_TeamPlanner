@@ -33,7 +33,6 @@ namespace ZEIN_TeamPlanner.Services
             if (dto.PriorityId.HasValue && !await _context.Priorities.AnyAsync(p => p.PriorityId == dto.PriorityId))
                 throw new InvalidOperationException("Ưu tiên không hợp lệ.");
 
-            // Validate hạn chót
             if (dto.Deadline.HasValue && dto.Deadline <= DateTime.Now)
                 throw new InvalidOperationException("Hạn chót phải lớn hơn thời điểm hiện tại.");
 
@@ -123,6 +122,25 @@ namespace ZEIN_TeamPlanner.Services
                 throw new UnauthorizedAccessException("Bạn không có quyền xóa nhiệm vụ này.");
 
             _context.TaskItems.Remove(task);
+            await _context.SaveChangesAsync();
+        }
+
+        //Ham cập nhật trạng thái nhiệm vụ
+        public async Task UpdateTaskStatusAsync(int taskId, TaskItem.TaskStatus status, string userId)
+        {
+            var task = await _context.TaskItems
+                .Include(t => t.Group).ThenInclude(g => g.Members)
+                .FirstOrDefaultAsync(t => t.TaskItemId == taskId);
+
+            if (task == null)
+                throw new KeyNotFoundException("Nhiệm vụ không tồn tại.");
+
+            if (!await CanAccessTaskAsync(taskId, userId))
+                throw new UnauthorizedAccessException("Bạn không có quyền cập nhật trạng thái nhiệm vụ này.");
+
+            task.Status = status;
+            task.CompletedAt = status == TaskItem.TaskStatus.Done ? DateTime.Now : null;
+
             await _context.SaveChangesAsync();
         }
     }

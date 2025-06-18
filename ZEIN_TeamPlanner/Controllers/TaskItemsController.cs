@@ -37,11 +37,13 @@ namespace ZEIN_TeamPlanner.Controllers
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Priority)
                 .Where(t => t.GroupId == groupId)
+                .OrderBy(t => t.Deadline.HasValue ? 0 : 1) // Đặt task có Deadline lên đầu
+                .ThenBy(t => t.Deadline) // Sắp xếp theo Deadline tăng dần
                 .ToListAsync();
 
             ViewBag.GroupId = groupId;
             ViewBag.GroupName = (await _context.Groups.FindAsync(groupId))?.GroupName;
-            ViewBag.IsMember = isMember; // Ẩn nút Create/Edit/Delete với Member
+            ViewBag.IsMember = isMember;
             return View(tasks);
         }
 
@@ -56,10 +58,12 @@ namespace ZEIN_TeamPlanner.Controllers
                 .ToListAsync();
 
             var tasks = await _context.TaskItems
-                .Include(t => t.Group).ThenInclude(g => g.Members) // Thêm include Group.Members
+                .Include(t => t.Group).ThenInclude(g => g.Members)
                 .Include(t => t.Priority)
                 .Include(t => t.AssignedToUser)
                 .Where(t => groupIds.Contains(t.GroupId))
+                .OrderBy(t => t.Deadline.HasValue ? 0 : 1) // Đặt task có Deadline lên đầu
+                .ThenBy(t => t.Deadline) // Sắp xếp theo Deadline tăng dần
                 .ToListAsync();
 
             if (!tasks.Any())
@@ -94,14 +98,12 @@ namespace ZEIN_TeamPlanner.Controllers
             if (!await _groupService.IsUserAdminAsync(groupId, userId))
                 return Forbid();
 
-            // Lấy danh sách thành viên từ GroupMembers
             var members = await _context.GroupMembers
                 .Where(gm => gm.GroupId == groupId && gm.LeftAt == null)
                 .Include(gm => gm.User)
                 .Select(gm => new { gm.UserId, gm.User.FullName })
                 .ToListAsync();
 
-            // Lấy thông tin nhóm và người tạo nhóm
             var group = await _context.Groups
                 .Include(g => g.CreatedByUser)
                 .FirstOrDefaultAsync(g => g.GroupId == groupId);
@@ -109,7 +111,6 @@ namespace ZEIN_TeamPlanner.Controllers
             if (group == null)
                 return NotFound();
 
-            // Thêm người tạo nhóm vào danh sách nếu chưa có
             if (!members.Any(m => m.UserId == group.CreatedByUserId))
             {
                 members.Add(new { UserId = group.CreatedByUserId, FullName = group.CreatedByUser?.FullName ?? "Admin" });
@@ -313,6 +314,37 @@ namespace ZEIN_TeamPlanner.Controllers
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int taskId, TaskItem.TaskStatus status)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var task = await _context.TaskItems
+                .Include(t => t.Group)
+                .FirstOrDefaultAsync(t => t.TaskItemId == taskId);
+
+            if (task == null)
+                return NotFound();
+
+            if (!await _taskService.CanAccessTaskAsync(taskId, userId))
+                return Forbid();
+
+            try
+            {
+                await _taskService.UpdateTaskStatusAsync(taskId, status, userId);
+                return RedirectToAction(nameof(Index), new { groupId = task.GroupId });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Index), new { groupId = task.GroupId });
             }
         }
     }

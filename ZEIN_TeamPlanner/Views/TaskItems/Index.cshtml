@@ -13,6 +13,11 @@
     </p>
 }
 
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
 @if (Model.Any())
 {
     <table class="table table-striped">
@@ -23,13 +28,10 @@
                 <th>Status</th>
                 <th>Deadline</th>
                 <th>Assigned To</th>
-                <th>Priority</th>
-                <th>Tags</th>
+                @* <th>Priority</th> *@
+                @* <th>Tags</th> *@
                 <th>Completed At</th>
-                @if (!ViewBag.IsMember)
-                {
-                    <th>Actions</th>
-                }
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -40,19 +42,29 @@
                         <a asp-action="Details" asp-route-id="@task.TaskItemId">@task.Title</a>
                     </td>
                     <td>@(task.Description?.Length > 50 ? task.Description.Substring(0, 50) + "..." : task.Description ?? "")</td>
-                    <td>@task.Status</td>
+                    <td>
+                        <form asp-action="UpdateStatus" method="post" style="display: flex">
+                            <input type="hidden" name="taskId" value="@task.TaskItemId" />
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="ToDo" selected="@(task.Status == TaskItem.TaskStatus.ToDo)">To Do</option>
+                                <option value="InProgress" selected="@(task.Status == TaskItem.TaskStatus.InProgress)">In Progress</option>
+                                <option value="Done" selected="@(task.Status == TaskItem.TaskStatus.Done)">Done</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary mt-1">Save</button>
+                        </form>
+                    </td>
                     <td>@(task.Deadline?.ToString("dd MMMM yyyy") ?? "No deadline")</td>
                     <td>@(task.AssignedToUser?.FullName ?? "Unassigned")</td>
-                    <td>@(task.Priority?.Name ?? "None")</td>
-                    <td>@(task.Tags ?? "")</td>
-                    <td>@(task.CompletedAt?.ToString("dd MMMM yyyy") ?? "Not completed")</td>
-                    @if (!ViewBag.IsMember)
-                    {
-                        <td>
+                    @* <td>@(task.Priority?.Name ?? "None")</td> *@
+                    @* <td>@(task.Tags ?? "")</td> *@
+                    <td>@(task.CompletedAt?.ToString("dd MMMM yyyy HH:mm") ?? "Not completed")</td>
+                    <td>
+                        @if (!ViewBag.IsMember)
+                        {
                             <a asp-action="Edit" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-secondary">Edit</a>
                             <a asp-action="Delete" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-danger">Delete</a>
-                        </td>
-                    }
+                        }
+                    </td>
                 </tr>
             }
         </tbody>

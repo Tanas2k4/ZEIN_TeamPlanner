@@ -27,7 +27,7 @@
             <dt class="col-sm-3">Created By</dt>
             <dd class="col-sm-9">@Model.CreatedByUser?.FullName</dd>
             <dt class="col-sm-3">Created At</dt>
-            <dd class="col-sm-9">@Model.CreateAt.ToString("dd MMM yyyy")</dd>
+            <dd class="col-sm-9">@Model.CreateAt`.ToString("dd MMM yyyy")</dd>
         </dl>
     </div>
 </div>
@@ -42,6 +42,7 @@
                 <th>Email</th>
                 <th>Role</th>
                 <th>Joined At</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -49,9 +50,19 @@
             {
                 <tr>
                     <td>@member.User.FullName</td>
-                    <td>@member.User.Email</td>
+                    <td>@member.User.UserName</td>
                     <td>@member.Role</td>
                     <td>@member.JoinedAt.ToString("dd MMM yyyy")</td>
+                    <td>
+                        @if (ViewBag.IsAdmin && member.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
+                        {
+                            <form asp-action="RemoveMember" method="post" class="d-inline">
+                                <input type="hidden" name="groupId" value="@Model.GroupId" />
+                                <input type="hidden" name="memberId" value="@member.UserId" />
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc muốn xóa @member.User.FullName khỏi nhóm?')">Remove</button>
+                            </form>
+                        }
+                    </td>
                 </tr>
             }
         </tbody>
@@ -70,11 +81,11 @@ else
         <div class="form-group">
             <label for="email">Email:</label>
             <input type="email" name="email" id="email" class="form-control" required />
-			<label for="role">Role:</label>
+            @* <label for="role">Role:</label>
             <select name="role" id="role" class="form-control">
                 <option value="Member">Member</option>
                 <option value="Admin">Admin</option>
-			</select>
+            </select> *@
         </div>
         <button type="submit" class="btn btn-primary mt-2">Invite</button>
     </form>
@@ -87,5 +98,13 @@ else
     @if (ViewBag.IsAdmin)
     {
         <a asp-action="Edit" asp-route-id="@Model.GroupId" class="btn btn-secondary">Edit Group</a>
+        <a asp-action="Delete" asp-route-id="@Model.GroupId" class="btn btn-danger">Delete Group</a>
+    }
+    @if (!ViewBag.IsAdmin)
+    {
+        <form asp-action="LeaveGroup" method="post" class="d-inline">
+            <input type="hidden" name="groupId" value="@Model.GroupId" />
+            <button type="submit" class="btn btn-warning" onclick="return confirm('Bạn có chắc muốn rời nhóm @Model.GroupName?')">Leave Group</button>
+        </form>
     }
 </div>

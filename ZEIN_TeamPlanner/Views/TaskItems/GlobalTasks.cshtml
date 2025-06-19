@@ -16,6 +16,11 @@
     <a asp-controller="Groups" asp-action="Index" class="btn btn-primary">Back to Groups</a>
 </p>
 
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
 @if (Model.Any())
 {
     <table class="table table-striped">
@@ -25,9 +30,8 @@
                 <th>Title</th>
                 <th>Status</th>
                 <th>Deadline</th>
-                <th>Priority</th>
                 <th>Assigned To</th>
-                <th>Tags</th>
+                <th>Completed At</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -35,13 +39,26 @@
             @foreach (var task in Model)
             {
                 <tr>
-                    <td><a asp-controller="Groups" asp-action="Details" asp-route-id="@task.GroupId">@task.Group.GroupName</a></td>
+                    <td>
+                        <a asp-controller="Groups" asp-action="Details" asp-route-id="@task.GroupId">
+                            @(task.Group?.GroupName ?? "Unknown Group")
+                        </a>
+                    </td>
                     <td>@task.Title</td>
-                    <td>@task.Status</td>
-                    <td>@(task.Deadline.HasValue? task.Deadline.Value.ToString("dd MMM yyyy HH:mm") : "None")</td>
-                    <td>@(task.Priority?.Name ?? "None")</td>
-                    <td>@(task.AssignedToUser?.FullName ?? "Unassigned")</td> <!-- Sửa UserName thành FullName -->
-                    <td>@(string.IsNullOrEmpty(task.Tags) ? "None" : task.Tags)</td>
+                    <td>
+                        <form asp-action="UpdateStatus" method="post" style="display: flex">
+                            <input type="hidden" name="taskId" value="@task.TaskItemId" />
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="ToDo" selected="@(task.Status == TaskItem.TaskStatus.ToDo)">To Do</option>
+                                <option value="InProgress" selected="@(task.Status == TaskItem.TaskStatus.InProgress)">In Progress</option>
+                                <option value="Done" selected="@(task.Status == TaskItem.TaskStatus.Done)">Done</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary mt-1">Save</button>
+                        </form>
+                    </td>
+                    <td>@(task.Deadline?.ToString("dd MMM yyyy HH:mm") ?? "None")</td>
+                    <td>@(task.AssignedToUser?.FullName ?? "Unassigned")</td>
+                    <td>@(task.CompletedAt?.ToString("dd MMM yyyy HH:mm") ?? "Not completed")</td>
                     <td>
                         <a asp-action="Details" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-info">Details</a>
                         @if (task.Group?.Members != null && task.Group.Members.Any(m => m.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))

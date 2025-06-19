@@ -27,7 +27,7 @@
             <dt class="col-sm-3">Created By</dt>
             <dd class="col-sm-9">@Model.CreatedByUser?.FullName</dd>
             <dt class="col-sm-3">Created At</dt>
-            <dd class="col-sm-9">@Model.CreateAt`.ToString("dd MMM yyyy")</dd>
+            <dd class="col-sm-9">@Model.CreateAt.ToString("dd MMM yyyy")</dd>
         </dl>
     </div>
 </div>
@@ -80,12 +80,7 @@ else
         <input type="hidden" name="groupId" value="@Model.GroupId" />
         <div class="form-group">
             <label for="email">Email:</label>
-            <input type="email" name="email" id="email" class="form-control" required />
-            @* <label for="role">Role:</label>
-            <select name="role" id="role" class="form-control">
-                <option value="Member">Member</option>
-                <option value="Admin">Admin</option>
-            </select> *@
+            <input type="email" name="email" id="email" class="form-control" required />            
         </div>
         <button type="submit" class="btn btn-primary mt-2">Invite</button>
     </form>

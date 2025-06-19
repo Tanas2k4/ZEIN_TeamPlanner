@@ -23,7 +23,6 @@ namespace ZEIN_TeamPlanner.Controllers
             _context = context;
         }
 
-        // GET: /Groups/Create
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -34,7 +33,6 @@ namespace ZEIN_TeamPlanner.Controllers
             return View(new CreateGroupDto());
         }
 
-        // POST: /Groups/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateGroupDto dto)
@@ -65,7 +63,6 @@ namespace ZEIN_TeamPlanner.Controllers
             }
         }
 
-        // GET: /Groups/Details
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
@@ -85,7 +82,6 @@ namespace ZEIN_TeamPlanner.Controllers
             return View(group);
         }
 
-        // GET: /Groups/Index
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -97,7 +93,6 @@ namespace ZEIN_TeamPlanner.Controllers
             return View(groups);
         }
 
-        // GET: /Groups/Edit
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -130,7 +125,6 @@ namespace ZEIN_TeamPlanner.Controllers
             return View(dto);
         }
 
-        // POST: /Groups/Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(EditGroupDto dto)
@@ -169,8 +163,6 @@ namespace ZEIN_TeamPlanner.Controllers
             }
         }
 
-        // POST: /Groups/InviteMember
-        // Mời thành viên trực tiếp vào nhóm, không cần xác nhận
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> InviteMember(int groupId, string email)
@@ -190,7 +182,14 @@ namespace ZEIN_TeamPlanner.Controllers
                 return RedirectToAction(nameof(Details), new { id = groupId });
             }
 
-            // Kiểm tra nếu người dùng đã trong nhóm
+            var oldMember = await _context.GroupMembers
+                .FirstOrDefaultAsync(gm => gm.GroupId == groupId && gm.UserId == invitedUser.Id && gm.LeftAt != null);
+            if (oldMember != null)
+            {
+                _context.GroupMembers.Remove(oldMember);
+                await _context.SaveChangesAsync();
+            }
+
             var existingMember = await _context.GroupMembers
                 .FirstOrDefaultAsync(gm => gm.GroupId == groupId && gm.UserId == invitedUser.Id && gm.LeftAt == null);
             if (existingMember != null)
@@ -199,7 +198,6 @@ namespace ZEIN_TeamPlanner.Controllers
                 return RedirectToAction(nameof(Details), new { id = groupId });
             }
 
-            // Thêm trực tiếp vào GroupMembers
             var groupMember = new GroupMember
             {
                 GroupId = groupId,
@@ -211,8 +209,91 @@ namespace ZEIN_TeamPlanner.Controllers
             _context.GroupMembers.Add(groupMember);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = $"Đã mời {invitedUser.FullName} vào nhóm thành công.";
+            TempData["Success"] = $"Đã mời {invitedUser.FullName} vào nhóm với vai trò Member.";
             return RedirectToAction(nameof(Details), new { id = groupId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveMember(int groupId, string memberId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                await _groupService.RemoveMemberAsync(groupId, memberId, userId);
+                TempData["Success"] = "Xóa thành viên khỏi nhóm thành công.";
+            }
+            catch (KeyNotFoundException)
+            {
+                TempData["Error"] = "Nhóm hoặc thành viên không tồn tại.";
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["Error"] = "Bạn không có quyền xóa thành viên.";
+            }
+            return RedirectToAction(nameof(Details), new { id = groupId });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!await _groupService.IsUserAdminAsync(id, userId))
+                return Forbid();
+
+            var group = await _context.Groups
+                .Include(g => g.Members)
+                .FirstOrDefaultAsync(g => g.GroupId == id);
+
+            if (group == null)
+                return NotFound();
+
+            return View(group);
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                await _groupService.DeleteGroupAsync(id, userId);
+                TempData["Success"] = "Xóa nhóm thành công.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (KeyNotFoundException)
+            {
+                TempData["Error"] = "Nhóm không tồn tại.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LeaveGroup(int groupId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                await _groupService.LeaveGroupAsync(groupId, userId);
+                TempData["Success"] = "Bạn đã rời nhóm thành công.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (KeyNotFoundException)
+            {
+                TempData["Error"] = "Nhóm không tồn tại.";
+                return RedirectToAction(nameof(Details), new { id = groupId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Details), new { id = groupId });
+            }
         }
     }
 }

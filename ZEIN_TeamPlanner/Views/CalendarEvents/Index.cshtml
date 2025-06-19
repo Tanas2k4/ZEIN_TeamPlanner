@@ -10,10 +10,7 @@
 {
     <p>
         <a asp-action="Create" asp-route-groupId="@ViewBag.GroupId" class="btn btn-primary">Create New Event</a>
-    </p>
-    <p>
-        <a asp-controller="CalendarEvents" asp-action="Calendar" asp-route-groupId="@ViewBag.GroupId" class="btn btn-secondary">View Events in Calendar</a>
-    </p>
+    </p>    
 }
 
 @if (Model.Any())
@@ -62,7 +59,9 @@ else
 {
     <p>No events in this group.</p>
 }
-
+<p>
+    <a asp-controller="CalendarEvents" asp-action="Calendar" asp-route-groupId="@ViewBag.GroupId" class="btn btn-secondary">View Events in Calendar</a>
+</p>
 <div class="mt-3">
     <a asp-controller="Groups" asp-action="Details" asp-route-id="@ViewBag.GroupId" class="btn btn-primary">Back to Group</a>
 </div>

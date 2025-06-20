@@ -37,8 +37,8 @@ namespace ZEIN_TeamPlanner.Controllers
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Priority)
                 .Where(t => t.GroupId == groupId)
-                .OrderBy(t => t.Deadline.HasValue ? 0 : 1) // Đặt task có Deadline lên đầu
-                .ThenBy(t => t.Deadline) // Sắp xếp theo Deadline tăng dần
+                .OrderBy(t => t.Deadline.HasValue ? 0 : 1)
+                .ThenBy(t => t.Deadline)
                 .ToListAsync();
 
             ViewBag.GroupId = groupId;
@@ -62,8 +62,8 @@ namespace ZEIN_TeamPlanner.Controllers
                 .Include(t => t.Priority)
                 .Include(t => t.AssignedToUser)
                 .Where(t => groupIds.Contains(t.GroupId))
-                .OrderBy(t => t.Deadline.HasValue ? 0 : 1) // Đặt task có Deadline lên đầu
-                .ThenBy(t => t.Deadline) // Sắp xếp theo Deadline tăng dần
+                .OrderBy(t => t.Deadline.HasValue ? 0 : 1)
+                .ThenBy(t => t.Deadline)
                 .ToListAsync();
 
             if (!tasks.Any())
@@ -182,13 +182,13 @@ namespace ZEIN_TeamPlanner.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var task = await _context.TaskItems
-                .Include(t => t.Group)
+                .Include(t => t.Group).ThenInclude(g => g.Members)
                 .FirstOrDefaultAsync(t => t.TaskItemId == id);
 
             if (task == null)
                 return NotFound();
 
-            if (!await _groupService.IsUserAdminAsync(task.GroupId, userId))
+            if (!await _taskService.CanAccessTaskAsync(id, userId))
                 return Forbid();
 
             var dto = new EditTaskDto
@@ -227,7 +227,7 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Edit(EditTaskDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!await _groupService.IsUserAdminAsync(dto.GroupId, userId))
+            if (!await _taskService.CanAccessTaskAsync(dto.TaskItemId, userId))
                 return Forbid();
 
             if (!ModelState.IsValid)

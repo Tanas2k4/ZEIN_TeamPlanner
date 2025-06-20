@@ -27,19 +27,62 @@
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
-                editable: true,
+                editable: false, // Tasks are not draggable
                 events: {
                     url: '@Url.Action("GetAllEvents", "CalendarEvents")',
                     method: 'GET'
                 },
                 eventClick: function (info) {
-                    window.location.href = '@Url.Action("Details", "CalendarEvents")/' + info.event.id;
+                    info.jsEvent.preventDefault();
+                    var props = info.event.extendedProps;
+                    var content = '<h5>' + info.event.title + '</h5>' +
+                        '<p><strong>Group:</strong> ' + props.groupName + '</p>' +
+                        '<p><strong>Description:</strong> ' + (props.description || 'None') + '</p>' +
+                        '<p><strong>Time Zone:</strong> ' + props.timeZone + '</p>';
+                    if (props.type === 'Task') {
+                        content += '<p><strong>Status:</strong> ' + (props.status || 'None') + '</p>' +
+                            '<p><strong>Priority:</strong> ' + (props.priority || 'None') + '</p>' +
+                            '<p><strong>Assignee:</strong> ' + (props.assignee || 'Unassigned') + '</p>' +
+                            '<p><a href="' + props.taskUrl + '" class="btn btn-primary btn-sm">View Task Details</a></p>';
+                    } else {
+                        content += '<p><a href="@Url.Action("Details", "CalendarEvents")/' + info.event.id.replace('event-', '') + '" class="btn btn-primary btn-sm">View Event Details</a></p>';
+                    }
+
+                    var popover = document.createElement('div');
+                    popover.className = 'popover';
+                    popover.style.position = 'absolute';
+                    popover.style.left = (info.jsEvent.pageX + 10) + 'px';
+                    popover.style.top = (info.jsEvent.pageY + 10) + 'px';
+                    popover.style.background = '#fff';
+                    popover.style.border = '1px solid #ccc';
+                    popover.style.padding = '15px';
+                    popover.style.zIndex = '1000';
+                    popover.style.maxWidth = '300px';
+                    popover.innerHTML = content;
+                    document.body.appendChild(popover);
+
+                    document.addEventListener('click', function closePopover(e) {
+                        if (!popover.contains(e.target)) {
+                            popover.remove();
+                            document.removeEventListener('click', closePopover);
+                        }
+                    });
                 },
                 eventDrop: function (info) {
-                    updateEventTime(info.event);
+                    if (info.event.extendedProps.type === 'Task') {
+                        alert('Tasks cannot be rescheduled.');
+                        calendar.refetchEvents();
+                        return;
+                    }
+                    updateEventDetails(info);
                 },
                 eventResize: function (info) {
-                    updateEventTime(info.event);
+                    if (info.event.extendedProps.type === 'Task') {
+                        alert('Tasks cannot be resized.');
+                        calendar.refetchEvents();
+                        return;
+                    }
+                    updateEventDetails(info);
                 },
                 eventTimeFormat: {
                     hour: '2-digit',
@@ -47,17 +90,29 @@
                     timeZoneName: 'short'
                 },
                 eventDidMount: function (info) {
-                    if (info.event.extendedProps.type === 'Meeting') {
-                        info.el.style.backgroundColor = '#3788d8';
+                    if (info.event.extendedProps.type === 'Task') {
+                        info.el.style.backgroundColor = '#ff9800'; // Orange for tasks
+                        info.el.style.borderColor = '#ff9800';
+                        if (info.event.extendedProps.status === 'Done') {
+                            var titleElement = info.el.querySelector('.fc-event-title');
+                            if (titleElement) {
+                                titleElement.style.textDecoration = 'line-through';
+                            }
+                        }
+                    } else if (info.event.extendedProps.type === 'Meeting') {
+                        info.el.style.backgroundColor = '#3788d8'; // Blue for meetings
+                        info.el.style.borderColor = '#3788d8';
                     } else if (info.event.extendedProps.type === 'Deadline') {
-                        info.el.style.backgroundColor = '#d83737';
+                        info.el.style.backgroundColor = '#d83737'; // Red for deadlines
+                        info.el.style.borderColor = '#d83737';
                     } else if (info.event.extendedProps.type === 'Reminder') {
-                        info.el.style.backgroundColor = '#37d86f';
+                        info.el.style.backgroundColor = '#37d86e'; // Green for reminders
+                        info.el.style.borderColor = '#37d86e';
                     }
                 }
             });
 
-            function updateEventTime(event) {
+            function updateEventDetails(info) {
                 fetch('@Url.Action("UpdateEventTime", "CalendarEvents")', {
                     method: 'POST',
                     headers: {
@@ -65,9 +120,9 @@
                         'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                     },
                     body: JSON.stringify({
-                        id: event.id,
-                        start: event.start.toISOString(),
-                        end: event.end ? event.end.toISOString() : null
+                        id: info.event.id.replace('event-', ''),
+                        start: info.event.start.toISOString(),
+                        end: info.event.end ? info.event.end.toISOString() : null
                     })
                 })
                 .then(response => {
@@ -85,4 +140,10 @@
             calendar.render();
         });
     </script>
+    <style>
+        .popover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+    </style>
 }

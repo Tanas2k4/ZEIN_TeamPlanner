@@ -6,7 +6,6 @@
 
 <h2>Create Task in @ViewBag.GroupName</h2>
 
-
 <form asp-action="Create" method="post">
     <input type="hidden" asp-for="GroupId" />
     <div class="form-group mb-3">
@@ -30,7 +29,9 @@
     </div>
     <div class="form-group mb-3">
         <label asp-for="Deadline" class="form-label"></label>
-        <input asp-for="Deadline" class="form-control" type="datetime-local" value="@(Model.Deadline.HasValue? Model.Deadline.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
+        <input asp-for="Deadline" class="form-control" type="datetime-local"
+               value="@(Model.Deadline.HasValue? Model.Deadline.Value.ToString("yyyy-MM-ddTHH:mm") : DateTime.Today.ToString("yyyy-MM-ddT09:00"))" />
+        <small class="form-text text-muted">Please include both date and time (e.g., 09:00 AM) for the deadline.</small>
         <span asp-validation-for="Deadline" class="text-danger"></span>
     </div>
     <div class="form-group mb-3">
@@ -68,4 +69,12 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Ensure datetime-local input prompts for time
+        document.getElementById('Deadline').addEventListener('change', function () {
+            if (this.value && !this.value.includes('T')) {
+                this.value += 'T09:00'; // Default to 09:00 if only date is selected
+            }
+        });
+    </script>
 }

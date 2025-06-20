@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
+using System.Linq;
 using System.Security.Claims;
 using TeamPlanner.Data;
 using ZEIN_TeamPlanner.Models;
@@ -118,7 +119,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 .Where(e => groupIds.Contains(e.GroupId) && e.StartTime >= start && (e.EndTime == null || e.EndTime <= end))
                 .Select(e => new
                 {
-                    id = e.CalendarEventId,
+                    id = "event-" + e.CalendarEventId,
                     title = $"{e.Title} ({e.Group.GroupName})",
                     start = e.StartTime.ToString("o"),
                     end = e.EndTime.HasValue ? e.EndTime.Value.ToString("o") : null,
@@ -129,12 +130,48 @@ namespace ZEIN_TeamPlanner.Controllers
                         type = e.Type.ToString(),
                         description = e.Description,
                         timeZone = e.TimeZoneId,
-                        groupName = e.Group.GroupName
+                        groupName = e.Group.GroupName,
+                        status = (string)null,
+                        priority = (string)null,
+                        assignee = (string)null,
+                        taskUrl = (string)null
                     }
                 })
                 .ToListAsync();
 
-            return Json(events);
+            var tasks = await _context.TaskItems
+                .Include(t => t.Group)
+                .Include(t => t.Priority)
+                .Include(t => t.AssignedToUser)
+                .Where(t => groupIds.Contains(t.GroupId) && t.Deadline != null && t.Deadline >= start.UtcDateTime && t.Deadline <= end.UtcDateTime)
+                .Select(t => new
+                {
+                    id = "task-" + t.TaskItemId,
+                    title = $"{t.Title} (Task - {t.Group.GroupName})",
+                    start = NodaTime.DateTimeZoneProviders.Tzdb["Asia/Ho_Chi_Minh"]
+                        .AtStrictly(NodaTime.LocalDateTime.FromDateTime(t.Deadline.Value))
+                        .ToDateTimeOffset().ToString("o"),
+                    end = NodaTime.DateTimeZoneProviders.Tzdb["Asia/Ho_Chi_Minh"]
+                        .AtStrictly(NodaTime.LocalDateTime.FromDateTime(t.Deadline.Value))
+                        .ToDateTimeOffset().ToString("o"),
+                    allDay = false,
+                    rrule = (string)null,
+                    extendedProps = new
+                    {
+                        type = "Task",
+                        description = t.Description,
+                        timeZone = "Asia/Ho_Chi_Minh",
+                        groupName = t.Group.GroupName,
+                        status = t.Status.ToString(),
+                        priority = t.Priority != null ? t.Priority.Name : "None",
+                        assignee = t.AssignedToUser != null ? t.AssignedToUser.FullName : "Unassigned",
+                        taskUrl = Url.Action("Details", "TaskItems", new { id = t.TaskItemId })
+                    }
+                })
+                .ToListAsync();
+
+            var allEvents = events.Concat(tasks).ToList();
+            return Json(allEvents);
         }
 
         [HttpPost]

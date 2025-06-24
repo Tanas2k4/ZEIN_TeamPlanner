@@ -88,6 +88,13 @@ namespace ZEIN_TeamPlanner.Controllers
                 return Forbid();
 
             ViewBag.IsMember = !await _groupService.IsUserAdminAsync(task.GroupId, userId);
+
+            // Fetch attachments
+            var attachments = await _context.FileAttachments
+                .Where(f => f.EntityType == "TaskItem" && f.EntityId == id)
+                .ToListAsync();
+            ViewBag.Attachments = attachments;
+
             return View(task);
         }
 
@@ -346,6 +353,94 @@ namespace ZEIN_TeamPlanner.Controllers
                 TempData["Error"] = ex.Message;
                 return RedirectToAction(nameof(Index), new { groupId = task.GroupId });
             }
+        }
+
+        // New: Upload Attachment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadAttachment(int taskId, IFormFile file)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var task = await _context.TaskItems
+                .Include(t => t.Group)
+                .FirstOrDefaultAsync(t => t.TaskItemId == taskId);
+
+            if (task == null || !await _taskService.CanAccessTaskAsync(taskId, userId))
+                return Forbid();
+
+            var isMember = !await _groupService.IsUserAdminAsync(task.GroupId, userId);
+            var isWithinDeadline = task.Deadline.HasValue && task.Deadline > DateTime.UtcNow;
+
+            if (isMember && !isWithinDeadline)
+            {
+                TempData["Error"] = "Cannot upload file after deadline.";
+                return RedirectToAction(nameof(Details), new { id = taskId });
+            }
+
+            if (file != null && file.Length > 0)
+            {
+                var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads", fileName);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException());
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var attachment = new FileAttachment
+                {
+                    FileName = file.FileName,
+                    FileUrl = $"/uploads/{fileName}",
+                    EntityType = "TaskItem",
+                    EntityId = taskId,
+                    UserId = userId,
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                _context.FileAttachments.Add(attachment);
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = "File uploaded successfully.";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = taskId });
+        }
+
+        // New: Delete Attachment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAttachment(int attachmentId, int taskId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var attachment = await _context.FileAttachments
+                .FirstOrDefaultAsync(f => f.Id == attachmentId && f.EntityType == "TaskItem" && f.EntityId == taskId);
+
+            if (attachment == null || !await _taskService.CanAccessTaskAsync(taskId, userId))
+                return Forbid();
+
+            var task = await _context.TaskItems
+                .FirstOrDefaultAsync(t => t.TaskItemId == taskId);
+            var isMember = !await _groupService.IsUserAdminAsync(task.GroupId, userId);
+            var isWithinDeadline = task.Deadline.HasValue && task.Deadline > DateTime.UtcNow;
+
+            if (isMember && !isWithinDeadline)
+            {
+                TempData["Error"] = "Cannot delete file after deadline.";
+                return RedirectToAction(nameof(Details), new { id = taskId });
+            }
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", attachment.FileUrl.TrimStart('/'));
+            if (System.IO.File.Exists(filePath))
+            {
+                System.IO.File.Delete(filePath);
+            }
+
+            _context.FileAttachments.Remove(attachment);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "File deleted successfully.";
+            return RedirectToAction(nameof(Details), new { id = taskId });
         }
     }
 }

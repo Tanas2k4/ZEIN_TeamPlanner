@@ -1,0 +1,90 @@
+﻿.task-details-layout {
+    display: flex;
+    gap: 20px;
+    margin: 20px;
+    height: calc(100vh - 120px); /* chiều cao cố định cho chia 50/50 */
+}
+
+/* Left panel full height */
+.left-panel {
+    flex: 3;
+    height: 100%;
+}
+
+/* Right panel split vertical */
+.right-panel {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 20px;
+}
+
+.card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header {
+    padding: 12px 16px;
+    font-weight: bold;
+    background: #f9fafb;
+    border-bottom: 1px solid #eee;
+}
+
+.card-body {
+    padding: 16px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.documents, .notes {
+    flex: 1;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.empty-state {
+    color: #999;
+    text-align: center;
+    padding: 20px;
+}
+
+.general-body .section {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.general-body h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+    display: flex;
+    align-items: center;
+}
+
+.row-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+}
+
+    .row-info label {
+        font-weight: 500;
+        color: #666;
+    }
+
+    .row-info span {
+        font-weight: 400;
+        color: #222;
+    }

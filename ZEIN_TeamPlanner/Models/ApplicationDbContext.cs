@@ -17,6 +17,8 @@ namespace TeamPlanner.Data
         public DbSet<CalendarEvent> CalendarEvents { get; set; }
         public DbSet<Priority> Priorities { get; set; }
         public DbSet<GroupInvitation> GroupInvitations { get; set; }
+        public DbSet<FileAttachment> FileAttachments { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -65,7 +67,6 @@ namespace TeamPlanner.Data
                 .HasForeignKey(e => e.GroupId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            
             builder.Entity<GroupInvitation>()
                 .HasOne(gi => gi.Group)
                 .WithMany()
@@ -88,6 +89,18 @@ namespace TeamPlanner.Data
             // Additional constraint for Group
             builder.Entity<Group>()
                 .HasIndex(g => g.GroupName)
+                .IsUnique();
+
+            // FileAttachment - TaskItem (implicit via EntityId and EntityType)
+            // FileAttachment - User
+            builder.Entity<FileAttachment>()
+                .HasOne(f => f.User)
+                .WithMany(u => u.FileAttachments)
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<FileAttachment>()
+                .HasIndex(f => new { f.EntityType, f.EntityId, f.FileName })
                 .IsUnique();
         }
     }

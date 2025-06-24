@@ -8,7 +8,6 @@ namespace ZEIN_TeamPlanner.Models
         public string? FullName { get; set; } // Nullable để tránh lỗi nếu không có giá trị
         public string? Address { get; set; } // Nullable nếu không bắt buộc
         public DateTime? DateOfBirth { get; set; } // Nullable vì không bắt buộc
-
         public string TimeZoneId { get; set; } = "UTC"; // For scheduling across time zones
         public bool IsOnline { get; set; } = false; // Presence status
         public string? StatusMessage { get; set; } // Custom status like "Busy" or "Available"
@@ -39,5 +38,6 @@ namespace ZEIN_TeamPlanner.Models
         public string AvatarUrl { get; set; } = "/images/default-avatar.png"; 
         public ICollection<GroupMember> GroupMemberships { get; set; }
         public ICollection<TaskItem> AssignedTasks { get; set; }
+        public ICollection<FileAttachment>? FileAttachments { get; set; }
     }
 }

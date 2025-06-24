@@ -307,6 +307,46 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.ToTable("CalendarEvents");
                 });
 
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.FileAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("EntityType", "EntityId", "FileName")
+                        .IsUnique();
+
+                    b.ToTable("FileAttachments");
+                });
+
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.Group", b =>
                 {
                     b.Property<int>("GroupId")
@@ -554,6 +594,17 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.Navigation("Group");
                 });
 
+            modelBuilder.Entity("ZEIN_TeamPlanner.Models.FileAttachment", b =>
+                {
+                    b.HasOne("ZEIN_TeamPlanner.Models.ApplicationUser", "User")
+                        .WithMany("FileAttachments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.Group", b =>
                 {
                     b.HasOne("ZEIN_TeamPlanner.Models.ApplicationUser", "CreatedByUser")
@@ -621,6 +672,8 @@ namespace ZEIN_TeamPlanner.Migrations
             modelBuilder.Entity("ZEIN_TeamPlanner.Models.ApplicationUser", b =>
                 {
                     b.Navigation("AssignedTasks");
+
+                    b.Navigation("FileAttachments");
 
                     b.Navigation("GroupMemberships");
                 });

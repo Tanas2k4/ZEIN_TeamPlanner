@@ -96,7 +96,25 @@
             <div class="icon-group d-flex align-items-center gap-3">
                 <a asp-controller="CalendarEvents" asp-action="GlobalCalendar" class="custom-icon-btn" data-bs-toggle="tooltip" title="Calendar"><i class="bi bi-calendar2-week"></i></a>
                 <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Help"><i class="bi bi-question-circle-fill"></i></a>
-                <a asp-controller="Notifications" asp-action="Index" class="custom-icon-btn" data-bs-toggle="tooltip" title="Notifications"><i class="bi bi-bell-fill"></i></a>
+                <!-- Notification Dropdown -->
+                <div class="dropdown">
+                    <a class="custom-icon-btn position-relative" href="#" role="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        <span id="notificationBadge" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle" style="display: none;"></span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg animate__animated animate__fadeIn" aria-labelledby="notificationDropdown" style="width: 300px;">
+                        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                            <h6 class="mb-0">Notifications</h6>
+                            <a href="#" id="markAllRead" class="text-muted small" style="display: none;">Mark all as read</a>
+                        </div>
+                        <div id="notificationList" class="list-group" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Notifications loaded via AJAX -->
+                        </div>
+                        <div class="p-2 border-top text-center">
+                            <a asp-controller="Notifications" asp-action="Index" class="text-decoration-none">View all notifications</a>
+                        </div>
+                    </div>
+                </div>
                 <a class="btn text-white animate__animated animate__pulse animate__infinite" style="background-color: #00AE72;" asp-controller="Groups" asp-action="Create">
                     <i class="bi bi-plus-lg"></i> Add Group
                 </a>
@@ -110,10 +128,135 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.0/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.43/moment-timezone-with-data.min.js"></script>
     <script>
-        // Initialize Bootstrap tooltips
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        $(document).ready(function () {
+            if (typeof signalR === "undefined") {
+                console.error("SignalR is not loaded. Notifications will not work.");
+                $("#notificationList").append('<div class="p-2 text-danger text-center">SignalR not available</div>');
+                return;
+            }
+
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/notificationHub")
+                .withAutomaticReconnect()
+                .build();
+
+            connection.on("ReceiveNotification", function (notification) {
+                console.log("Received notification:", notification);
+                addNotification(notification);
+                updateBadge();
+            });
+
+            connection.start().catch(function (err) {
+                console.error("SignalR Connection Error:", err);
+            });
+
+            // Load notifications on page load
+            loadNotifications();
+
+            $("#markAllRead").click(function (e) {
+                e.preventDefault();
+                markAllAsRead();
+            });
+
+            $("#notificationDropdown").on("shown.bs.dropdown", function () {
+                loadNotifications();
+            });
+
+                            function loadNotifications() {
+            $.ajax({
+                url: "/Notifications/GetNotifications",
+                method: "GET",
+                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                success: function (response) {
+                    $("#notificationList").empty();
+                    let notifications = Array.isArray(response) ? response : (response.data || []);
+                    if (notifications.length === 0) {
+                        $("#notificationList").append('<div class="p-2 text-muted text-center">No notifications</div>');
+                        $("#markAllRead").hide();
+                    } else {
+                        // Reverse the array to show latest first
+                        notifications.reverse().forEach(notification => addNotification(notification));
+                        $("#markAllRead").show();
+                    }
+                    updateBadge();
+                },
+                error: function (err) {
+                    console.error("Error loading notifications:", err);
+                    $("#notificationList").append('<div class="p-2 text-danger text-center">Error loading notifications</div>');
+                }
+            });
+        }
+
+                    function addNotification(notification) {
+            const isReadClass = notification.isRead ? "" : "list-group-item-primary";
+            let url = "#";
+            if (notification.relatedEntityType === "TaskItem") {
+                url = `/TaskItems/Details/${notification.relatedEntityId}`;
+            } else if (notification.relatedEntityType === "Group") {
+                url = `/Groups/Details/${notification.relatedEntityId}`;
+            } else if (notification.relatedEntityType === "CalendarEvent") {
+                url = `/CalendarEvents/Details/${notification.relatedEntityId}`;
+            }
+
+            const notificationHtml = `
+                <a href="${url}" class="list-group-item list-group-item-action ${isReadClass}" data-notification-id="${notification.id}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <small>${moment.utc(notification.createdAt).tz('Asia/Ho_Chi_Minh').format('DD/MM/YYYY, HH:mm')}</small>
+                    </div>
+                    <p class="mb-1">${notification.message}</p>
+                </a>
+            `;
+            $("#notificationList").prepend(notificationHtml);
+        }
+
+            function updateBadge() {
+                const unreadCount = $("#notificationList .list-group-item-primary").length;
+                const badge = $("#notificationBadge");
+                if (unreadCount > 0) {
+                    badge.text(unreadCount > 9 ? "9+" : unreadCount).show();
+                } else {
+                    badge.hide();
+                }
+            }
+
+                            function markAllAsRead() {
+            const notificationIds = $("#notificationList .list-group-item-primary").map(function () {
+                const id = $(this).data("notification-id");
+                return isNaN(id) ? null : parseInt(id); // Validate and convert to integer
+            }).get().filter(id => id !== null); // Filter out invalid IDs
+            console.log("Marking as read - Raw IDs:", $("#notificationList .list-group-item-primary").map(function () { return $(this).data("notification-id"); }).get());
+            console.log("Marking as read - Valid IDs:", notificationIds);
+
+            if (notificationIds.length > 0) {
+                const token = $('input[name="__RequestVerificationToken"]').val();
+                const data = { notificationIds: notificationIds };
+                console.log("Sending data:", JSON.stringify(data));
+                $.ajax({
+                    url: "/Notifications/MarkAsRead",
+                    method: "POST",
+                    contentType: "application/json",
+                    headers: { "RequestVerificationToken": token },
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        console.log("Mark as read success:", response);
+                        $("#notificationList .list-group-item-primary").removeClass("list-group-item-primary");
+                        updateBadge();
+                        $("#markAllRead").hide();
+                    },
+                    error: function (err) {
+                        console.error("Error marking notifications as read:", err.status, err.responseText, err.responseJSON);
+                    }
+                });
+            } else {
+                console.log("No valid unread notifications to mark.");
+            }
+        }
+        });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

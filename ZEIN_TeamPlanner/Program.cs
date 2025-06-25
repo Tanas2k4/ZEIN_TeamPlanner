@@ -2,17 +2,23 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TeamPlanner.Data;
+using ZEIN_TeamPlanner;
+using ZEIN_TeamPlanner.Hubs;
 using ZEIN_TeamPlanner.Models;
 using ZEIN_TeamPlanner.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // DB context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddSignalR();
+
 builder.Services.AddScoped<IGroupService, GroupService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddHostedService<ReminderBackgroundService>();
 // Identity config
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
@@ -52,11 +58,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
+app.MapHub<NotificationHub>("/notificationHub");
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.MapControllers();
 // Map routes
 app.MapControllerRoute(
     name: "default",

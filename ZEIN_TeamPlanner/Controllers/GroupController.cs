@@ -15,12 +15,14 @@ namespace ZEIN_TeamPlanner.Controllers
         private readonly IGroupService _groupService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public GroupsController(IGroupService groupService, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+        public GroupsController(IGroupService groupService, UserManager<ApplicationUser> userManager, ApplicationDbContext context, INotificationService notificationService)
         {
             _groupService = groupService;
             _userManager = userManager;
             _context = context;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
@@ -50,6 +52,13 @@ namespace ZEIN_TeamPlanner.Controllers
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var group = await _groupService.CreateGroupAsync(dto, userId);
+                await _notificationService.CreateNotificationAsync(
+                    userId,
+                    $"Bạn đã tạo nhóm '{group.GroupName}' thành công.",
+                    "GroupCreated",
+                    group.GroupId.ToString(),
+                    "Group"
+                );
                 return RedirectToAction("Details", new { id = group.GroupId });
             }
             catch (InvalidOperationException ex)
@@ -209,6 +218,14 @@ namespace ZEIN_TeamPlanner.Controllers
             _context.GroupMembers.Add(groupMember);
             await _context.SaveChangesAsync();
 
+            await _notificationService.CreateNotificationAsync(
+                invitedUser.Id,
+                $"Bạn đã được mời tham gia nhóm '{group.GroupName}'.",
+                "GroupInvite",
+                groupId.ToString(),
+                "Group"
+            );
+
             TempData["Success"] = $"Đã mời {invitedUser.FullName} vào nhóm với vai trò Member.";
             return RedirectToAction(nameof(Details), new { id = groupId });
         }
@@ -220,7 +237,18 @@ namespace ZEIN_TeamPlanner.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             try
             {
+                var group = await _context.Groups.FindAsync(groupId);
+                if (group == null)
+                    throw new KeyNotFoundException();
+
                 await _groupService.RemoveMemberAsync(groupId, memberId, userId);
+                await _notificationService.CreateNotificationAsync(
+                    memberId,
+                    $"Bạn đã bị xóa khỏi nhóm '{group.GroupName}'.",
+                    "GroupMemberRemoved",
+                    groupId.ToString(),
+                    "Group"
+                );
                 TempData["Success"] = "Xóa thành viên khỏi nhóm thành công.";
             }
             catch (KeyNotFoundException)
@@ -258,7 +286,18 @@ namespace ZEIN_TeamPlanner.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             try
             {
+                var group = await _context.Groups.FindAsync(id);
+                if (group == null)
+                    throw new KeyNotFoundException();
+
                 await _groupService.DeleteGroupAsync(id, userId);
+                await _notificationService.CreateNotificationAsync(
+                    userId,
+                    $"Nhóm '{group.GroupName}' đã được xóa thành công.",
+                    "GroupDeleted",
+                    id.ToString(),
+                    "Group"
+                );
                 TempData["Success"] = "Xóa nhóm thành công.";
                 return RedirectToAction(nameof(Index));
             }
@@ -280,7 +319,28 @@ namespace ZEIN_TeamPlanner.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             try
             {
+                var group = await _context.Groups
+                    .Include(g => g.Members)
+                    .FirstOrDefaultAsync(g => g.GroupId == groupId);
+                if (group == null)
+                    throw new KeyNotFoundException();
+
                 await _groupService.LeaveGroupAsync(groupId, userId);
+                var admins = group.Members
+                    .Where(m => m.Role == GroupRole.Admin && m.LeftAt == null)
+                    .Select(m => m.UserId)
+                    .Union(new[] { group.CreatedByUserId })
+                    .Distinct();
+                foreach (var adminId in admins)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        adminId,
+                        $"Thành viên đã rời nhóm '{group.GroupName}'.",
+                        "GroupMemberLeft",
+                        groupId.ToString(),
+                        "Group"
+                    );
+                }
                 TempData["Success"] = "Bạn đã rời nhóm thành công.";
                 return RedirectToAction(nameof(Index));
             }

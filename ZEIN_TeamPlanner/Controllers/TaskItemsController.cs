@@ -16,13 +16,15 @@ namespace ZEIN_TeamPlanner.Controllers
         private readonly IGroupService _groupService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public TaskItemsController(ITaskService taskService, IGroupService groupService, UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+        public TaskItemsController(ITaskService taskService, IGroupService groupService, UserManager<ApplicationUser> userManager, ApplicationDbContext context, INotificationService notificationService)
         {
             _taskService = taskService;
             _groupService = groupService;
             _userManager = userManager;
             _context = context;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
@@ -89,7 +91,6 @@ namespace ZEIN_TeamPlanner.Controllers
 
             ViewBag.IsMember = !await _groupService.IsUserAdminAsync(task.GroupId, userId);
 
-            // Fetch attachments
             var attachments = await _context.FileAttachments
                 .Where(f => f.EntityType == "TaskItem" && f.EntityId == id)
                 .ToListAsync();
@@ -162,7 +163,20 @@ namespace ZEIN_TeamPlanner.Controllers
 
             try
             {
-                await _taskService.CreateTaskAsync(dto, userId);
+                var task = await _taskService.CreateTaskAsync(dto, userId); // Assume returns TaskItem
+                if (!string.IsNullOrEmpty(dto.AssignedToUserId))
+                {
+                    var loadedTask = await _context.TaskItems
+                        .Include(t => t.Group)
+                        .FirstOrDefaultAsync(t => t.TaskItemId == task.TaskItemId);
+                    await _notificationService.CreateNotificationAsync(
+                        dto.AssignedToUserId,
+                        $"Bạn được giao nhiệm vụ '{loadedTask.Title}' trong nhóm '{loadedTask.Group.GroupName}'.",
+                        "TaskAssigned",
+                        task.TaskItemId.ToString(),
+                        "TaskItem"
+                    );
+                }
                 return RedirectToAction("Index", new { groupId = dto.GroupId });
             }
             catch (InvalidOperationException ex)
@@ -256,7 +270,47 @@ namespace ZEIN_TeamPlanner.Controllers
 
             try
             {
+                var taskBeforeUpdate = await _context.TaskItems
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.TaskItemId == dto.TaskItemId);
                 await _taskService.UpdateTaskAsync(dto, userId);
+                var taskAfterUpdate = await _context.TaskItems
+                    .Include(t => t.Group).ThenInclude(g => g.Members)
+                    .FirstOrDefaultAsync(t => t.TaskItemId == dto.TaskItemId);
+
+                // Notify if AssignedToUserId changed
+                if (taskBeforeUpdate.AssignedToUserId != dto.AssignedToUserId && !string.IsNullOrEmpty(dto.AssignedToUserId))
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        dto.AssignedToUserId,
+                        $"Bạn được giao nhiệm vụ '{taskAfterUpdate.Title}' trong nhóm '{taskAfterUpdate.Group.GroupName}'.",
+                        "TaskAssigned",
+                        dto.TaskItemId.ToString(),
+                        "TaskItem"
+                    );
+                }
+
+                // Notify if Status changed by a member
+                var isAdmin = await _groupService.IsUserAdminAsync(dto.GroupId, userId);
+                if (!isAdmin && taskBeforeUpdate.Status != dto.Status)
+                {
+                    var admins = taskAfterUpdate.Group.Members
+                        .Where(m => m.Role == GroupRole.Admin && m.LeftAt == null)
+                        .Select(m => m.UserId)
+                        .Union(new[] { taskAfterUpdate.Group.CreatedByUserId })
+                        .Distinct();
+                    foreach (var adminId in admins)
+                    {
+                        await _notificationService.CreateNotificationAsync(
+                            adminId,
+                            $"Thành viên đã cập nhật trạng thái nhiệm vụ '{taskAfterUpdate.Title}' thành '{dto.Status}' trong nhóm '{taskAfterUpdate.Group.GroupName}'.",
+                            "TaskStatusUpdated",
+                            dto.TaskItemId.ToString(),
+                            "TaskItem"
+                        );
+                    }
+                }
+
                 return RedirectToAction("Index", new { groupId = dto.GroupId });
             }
             catch (KeyNotFoundException)
@@ -330,7 +384,8 @@ namespace ZEIN_TeamPlanner.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var task = await _context.TaskItems
-                .Include(t => t.Group)
+                .Include(t => t.Group).ThenInclude(g => g.Members)
+                .Include(t => t.AssignedToUser)
                 .FirstOrDefaultAsync(t => t.TaskItemId == taskId);
 
             if (task == null)
@@ -342,6 +397,35 @@ namespace ZEIN_TeamPlanner.Controllers
             try
             {
                 await _taskService.UpdateTaskStatusAsync(taskId, status, userId);
+                var isAdmin = await _groupService.IsUserAdminAsync(task.GroupId, userId);
+                if (isAdmin && task.AssignedToUserId != null)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        task.AssignedToUserId,
+                        $"Quản trị viên đã cập nhật trạng thái nhiệm vụ '{task.Title}' thành '{status}' trong nhóm '{task.Group.GroupName}'.",
+                        "TaskStatusUpdated",
+                        taskId.ToString(),
+                        "TaskItem"
+                    );
+                }
+                else if (!isAdmin)
+                {
+                    var admins = task.Group.Members
+                        .Where(m => m.Role == GroupRole.Admin && m.LeftAt == null)
+                        .Select(m => m.UserId)
+                        .Union(new[] { task.Group.CreatedByUserId })
+                        .Distinct();
+                    foreach (var adminId in admins)
+                    {
+                        await _notificationService.CreateNotificationAsync(
+                            adminId,
+                            $"Thành viên đã cập nhật trạng thái nhiệm vụ '{task.Title}' thành '{status}' trong nhóm '{task.Group.GroupName}'.",
+                            "TaskStatusUpdated",
+                            taskId.ToString(),
+                            "TaskItem"
+                        );
+                    }
+                }
                 return RedirectToAction(nameof(Index), new { groupId = task.GroupId });
             }
             catch (KeyNotFoundException)
@@ -355,7 +439,6 @@ namespace ZEIN_TeamPlanner.Controllers
             }
         }
 
-        // New: Upload Attachment
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UploadAttachment(int taskId, IFormFile file)
@@ -373,7 +456,7 @@ namespace ZEIN_TeamPlanner.Controllers
 
             if (isMember && !isWithinDeadline)
             {
-                TempData["Error"] = "Cannot upload file after deadline.";
+                TempData["Error"] = "Không được tải tệp sau thời hạn.";
                 return RedirectToAction(nameof(Details), new { id = taskId });
             }
 
@@ -401,13 +484,12 @@ namespace ZEIN_TeamPlanner.Controllers
                 _context.FileAttachments.Add(attachment);
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = "File uploaded successfully.";
+                TempData["Success"] = "Tệp đã được tải lên thành công.";
             }
 
             return RedirectToAction(nameof(Details), new { id = taskId });
         }
 
-        // New: Delete Attachment
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAttachment(int attachmentId, int taskId)
@@ -421,12 +503,13 @@ namespace ZEIN_TeamPlanner.Controllers
 
             var task = await _context.TaskItems
                 .FirstOrDefaultAsync(t => t.TaskItemId == taskId);
+
             var isMember = !await _groupService.IsUserAdminAsync(task.GroupId, userId);
             var isWithinDeadline = task.Deadline.HasValue && task.Deadline > DateTime.UtcNow;
 
             if (isMember && !isWithinDeadline)
             {
-                TempData["Error"] = "Cannot delete file after deadline.";
+                TempData["Error"] = "Không được xóa tệp sau thời hạn.";
                 return RedirectToAction(nameof(Details), new { id = taskId });
             }
 
@@ -439,7 +522,7 @@ namespace ZEIN_TeamPlanner.Controllers
             _context.FileAttachments.Remove(attachment);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = "File deleted successfully.";
+            TempData["Success"] = "Tệp đã được xóa thành công.";
             return RedirectToAction(nameof(Details), new { id = taskId });
         }
     }

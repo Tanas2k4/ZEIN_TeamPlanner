@@ -18,7 +18,7 @@ namespace TeamPlanner.Data
         public DbSet<Priority> Priorities { get; set; }
         public DbSet<GroupInvitation> GroupInvitations { get; set; }
         public DbSet<FileAttachment> FileAttachments { get; set; }
-
+        public DbSet<Notification> Notifications { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

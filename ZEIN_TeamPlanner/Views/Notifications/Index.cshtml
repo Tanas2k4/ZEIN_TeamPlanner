@@ -1,0 +1,49 @@
+﻿@model List<ZEIN_TeamPlanner.Models.Notification>
+
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<h2>Notifications</h2>
+<div class="mb-3">
+    <button id="markAllReadIndex" class="btn btn-primary">Mark all as read</button>
+</div>
+<div class="list-group">
+    @foreach (var notification in Model)
+    {
+        var url = notification.RelatedEntityType switch
+        {
+            "TaskItem" => Url.Action("Details", "TaskItems", new { id = notification.RelatedEntityId }),
+            "Group" => Url.Action("Details", "Groups", new { id = notification.RelatedEntityId }),
+            "CalendarEvent" => Url.Action("Details", "CalendarEvents", new { id = notification.RelatedEntityId }),
+            _ => "#"
+        };
+        <a href="@url" class="list-group-item list-group-item-action @(notification.IsRead ? "" : "list-group-item-primary")">
+            <div class="d-flex w-100 justify-content-between">
+                <small>@notification.CreatedAt.ToString("dd/MM/yyyy, HH:mm")</small>
+            </div>
+            <p class="mb-1">@notification.Message</p>
+        </a>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $("#markAllReadIndex").click(function (e) {
+                e.preventDefault();
+                $.ajax({
+                    url: "/Notifications/MarkAllAsRead",
+                    method: "POST",
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function () {
+                        location.reload(); // Refresh to reflect changes
+                    },
+                    error: function (err) {
+                        console.error("Error marking all as read:", err);
+                    }
+                });
+            });
+        });
+    </script>
+}

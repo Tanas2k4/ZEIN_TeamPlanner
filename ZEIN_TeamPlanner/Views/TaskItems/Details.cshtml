@@ -7,6 +7,12 @@
     var isMember = !Model.Group.Members.Any(m => m.UserId == currentUserId && m.Role == GroupRole.Admin);
     var isWithinDeadline = Model.Deadline.HasValue && Model.Deadline > DateTime.UtcNow;
     var attachments = ViewBag.Attachments as List<FileAttachment> ?? new List<FileAttachment>();
+    var statusClass = Model.Status switch
+    {
+        ZEIN_TeamPlanner.Models.TaskItem.TaskStatus.Done => "status-done",
+        ZEIN_TeamPlanner.Models.TaskItem.TaskStatus.InProgress => "status-in-progress",
+        _ => "status-todo"
+    };
 }
 
 @section Styles {
@@ -15,22 +21,35 @@
 }
 
 <!-- Task Title Display -->
-<div class="mb-4 p-3 bg-light rounded shadow-sm">
-    <h2 class="mb-0">
+<div class="title-container">
+    <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-outline-secondary btn-sm" title="Back to Tasks">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h2 class="title-text">
         <i class="bi bi-card-checklist me-2"></i> @Model.Title
     </h2>
+    <div class="action-buttons">
+        @if (!isMember)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.TaskItemId" class="btn btn-outline-primary btn-sm ms-2" title="Edit">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <a asp-action="Delete" asp-route-id="@Model.TaskItemId" class="btn btn-outline-danger btn-sm ms-2" title="Delete">
+                <i class="bi bi-trash"></i>
+            </a>
+        }
+    </div>
 </div>
 
 <div class="task-details-layout">
     <!-- Left: General (full height) -->
     <div class="left-panel">
         <div class="card general h-100">
-            <div class="card-header">
+            <div class="card-header @statusClass">
                 <i class="bi bi-info-circle"></i> General
             </div>
             <div class="card-body">
                 <div class="card-body general-body">
-
                     <div class="section">
                         <h6><i class="bi bi-list-task me-1"></i> General Information</h6>
                         <div class="row-info">
@@ -74,13 +93,12 @@
                     <div class="section">
                         <h6><i class="bi bi-briefcase me-1"></i> Case Info</h6>
                         <div class="row-info">
-                            <label>Group:</label><span>@Model.Group?.GroupName ?? "N/A"</span>
+                            <label>Group:</label><span>@Model.Group?.GroupName</span>
                         </div>
                         <div class="row-info">
                             <label>Group Role:</label><span>@(isMember ? "Member" : "Admin")</span>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -90,14 +108,14 @@
     <div class="right-panel">
         <!-- Documents -->
         <div class="card documents">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header @statusClass d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-folder"></i> Documents</span>
                 <form asp-action="UploadAttachment" method="post" enctype="multipart/form-data" class="d-flex gap-2">
                     <input type="hidden" name="taskId" value="@Model.TaskItemId" />
                     <input type="file" name="file" class="form-control form-control-sm" />
                     <button type="submit" class="btn btn-outline-primary btn-sm"
                             @(isMember && !isWithinDeadline ? "disabled" : "")>
-                        Add document
+                        <i class="bi bi-upload"></i>
                     </button>
                 </form>
             </div>
@@ -115,7 +133,9 @@
                                     <form asp-action="DeleteAttachment" method="post" class="d-inline ms-auto">
                                         <input type="hidden" name="attachmentId" value="@file.Id" />
                                         <input type="hidden" name="taskId" value="@Model.TaskItemId" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-2">Delete</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-2">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </form>
                                 }
                             </li>
@@ -135,15 +155,19 @@
 
         <!-- Notes -->
         <div class="card notes">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header @statusClass d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-journal-text"></i> Notes</span>
                 <div>
                     <label class="me-2">
                         <input type="checkbox" checked disabled />
                         System notes
                     </label>
-                    <a href="#" class="me-2">Add note</a>
-                    <a href="#">Show more</a>
+                    <a href="#" class="btn btn-outline-primary btn-sm me-2" title="Add note">
+                        <i class="bi bi-plus"></i>
+                    </a>
+                    <a href="#" class="btn btn-outline-info btn-sm" title="Show more">
+                        <i class="bi bi-eye"></i>
+                    </a>
                 </div>
             </div>
             <div class="card-body text-center">
@@ -155,14 +179,4 @@
             </div>
         </div>
     </div>
-</div>
-
-<!-- Footer Buttons -->
-<div class="mt-4 text-end">
-    <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-secondary">Back to Tasks</a>
-    @if (!isMember)
-    {
-        <a asp-action="Edit" asp-route-id="@Model.TaskItemId" class="btn btn-primary ms-2">Edit</a>
-        <a asp-action="Delete" asp-route-id="@Model.TaskItemId" class="btn btn-danger ms-2">Delete</a>
-    }
 </div>

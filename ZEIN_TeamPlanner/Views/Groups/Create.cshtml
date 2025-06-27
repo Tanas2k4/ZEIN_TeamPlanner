@@ -4,36 +4,41 @@
     ViewData["Title"] = "Create Group";
 }
 
-<h2>Create New Group</h2>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="~/css/groupCreate.css" />
 
+<div class="form-container">
+    <h2>Create New Group</h2>
 
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-<form asp-action="Create" method="post">
-    <div class="form-group mb-3">
-        <label asp-for="GroupName" class="form-label">Group Name</label>
-        <input asp-for="GroupName" class="form-control" required />
-        <span asp-validation-for="GroupName" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <label asp-for="Description" class="form-label">Description</label>
-        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
-        <span asp-validation-for="Description" class="text-danger"></span>
-    </div>
-    @* <div class="form-group mb-3">
-        <label asp-for="MemberIds" class="form-label">Add Members (Optional)</label>
-        <select asp-for="MemberIds" class="form-select" multiple>
-            @foreach (var user in ViewBag.Users)
-            {
-                <option value="@user.Id">@user.FullName</option>
-            }
-        </select>
-        <span asp-validation-for="MemberIds" class="text-danger"></span>
-    </div> *@
-    <div class="form-group mb-3">
-        <button type="submit" class="btn btn-primary">Create Group</button>
-        <a asp-action="Index" asp-controller="Groups" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+    <form asp-action="Create" asp-controller="Groups" method="post" id="createGroupForm">
+        <div class="form-group">
+            <label asp-for="GroupName" class="form-label">Group Name</label>
+            <input asp-for="GroupName" class="form-control" required />
+            <span asp-validation-for="GroupName" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Description" class="form-label">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+        <div class="button-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Create Group
+            </button>
+            <a asp-action="Index" asp-controller="Groups" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

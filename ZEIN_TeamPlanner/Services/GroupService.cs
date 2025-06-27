@@ -103,38 +103,9 @@ namespace ZEIN_TeamPlanner.Services
             if (await _context.Groups.AnyAsync(g => g.GroupName == dto.GroupName && g.GroupId != dto.GroupId))
                 throw new InvalidOperationException("Tên nhóm đã tồn tại.");
 
+            // Update group details only
             group.GroupName = dto.GroupName;
             group.Description = dto.Description;
-
-            var currentMembers = group.Members.Where(m => m.LeftAt == null).ToList();
-            var currentMemberIds = currentMembers.Select(m => m.UserId).ToList();
-            var newMemberIds = dto.MemberIds ?? new List<string>();
-
-            foreach (var member in currentMembers.Where(m => !newMemberIds.Contains(m.UserId)))
-            {
-                member.LeftAt = DateTime.UtcNow;
-            }
-
-            foreach (var memberId in newMemberIds.Where(id => !currentMemberIds.Contains(id)))
-            {
-                if (await _context.Users.AnyAsync(u => u.Id == memberId))
-                {
-                    var oldMember = group.Members.FirstOrDefault(m => m.UserId == memberId && m.LeftAt != null);
-                    if (oldMember != null)
-                    {
-                        _context.GroupMembers.Remove(oldMember);
-                    }
-
-                    var member = new GroupMember
-                    {
-                        GroupId = group.GroupId,
-                        UserId = memberId,
-                        Role = GroupRole.Member,
-                        JoinedAt = DateTime.UtcNow
-                    };
-                    _context.GroupMembers.Add(member);
-                }
-            }
 
             await _context.SaveChangesAsync();
             return group;

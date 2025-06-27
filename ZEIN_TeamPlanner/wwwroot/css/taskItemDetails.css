@@ -11,12 +11,11 @@
     display: flex;
     align-items: center;
     margin: 20px;
-    padding: 20px;
 }
 
 .title-text {
     margin: 0 auto;
-    color: #005b3a;
+    color: black;
     font-size: 1.8rem;
     font-weight: 600;
 }
@@ -139,10 +138,14 @@
 }
 
 .btn-outline-secondary {
-    color: #0ac782;
+    color: #fff;
+    text-align: center;
     transition: all 0.3s ease;
-    border: 2px solid #0ac782;
-    width: 70px
+    border: 2px solid #00c4b4;
+    width: 100px;
+    padding: 8px;
+    background: linear-gradient(to right, #00AE72, #00c4b4);
+    border-radius: 8px
 }
 
     .btn-outline-secondary:hover {

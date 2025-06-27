@@ -1,0 +1,144 @@
+﻿.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+h2 {
+    text-align: center;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+.alert {
+    margin-bottom: 1.5rem;
+    border-radius: 0.25rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(to right, #00AE72, #00c4b4);
+    border: none;
+    transition: background 0.3s ease;
+}
+
+    .btn-primary:hover {
+        background: linear-gradient(to right, #008c5a, #009f92);
+    }
+
+#calendar {
+    font-size: 0.9rem;
+}
+
+.fc {
+    background: #fff;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+    .fc .fc-toolbar {
+        background: #f8f9fa;
+        padding: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .fc .fc-button {
+        background: #6c757d;
+        border: none;
+        transition: background 0.3s ease;
+    }
+
+        .fc .fc-button:hover {
+            background: #5a6268;
+        }
+
+        .fc .fc-button.fc-button-active {
+            background: linear-gradient(to right, #00AE72, #00c4b4);
+        }
+
+    .fc .fc-daygrid-day {
+        transition: background 0.2s ease;
+    }
+
+        .fc .fc-daygrid-day:hover {
+            background: #f1f3f5;
+        }
+
+    .fc .fc-daygrid-day-number {
+        color: #000;
+        text-decoration: none;
+        text-align: center;
+        display: block;
+    }
+
+    .fc .fc-col-header-cell {
+        color: #000;
+        text-decoration: none;
+        text-align: center;
+    }
+
+.fc-event {
+    border-radius: 0.25rem;
+    padding: 2px 4px;
+    cursor: pointer;
+    color: #fff;
+    text-align: center;
+}
+
+    .fc-event.task {
+        background: #f33fa2;
+        border-color: #f33fa2;
+    }
+
+    .fc-event.meeting {
+        background: #24c122;
+        border-color: #3788d8;
+    }
+
+    .fc-event.deadline {
+        background: #d83737;
+        border-color: #d83737;
+    }
+
+    .fc-event.reminder {
+        background: #37d86e;
+        border-color: #37d86e;
+    }
+
+    .fc-event.done .fc-event-title {
+        text-decoration: line-through;
+    }
+
+@media (max-width: 576px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .button-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.1rem;
+    }
+}

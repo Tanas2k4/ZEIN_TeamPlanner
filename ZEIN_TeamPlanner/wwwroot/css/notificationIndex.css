@@ -1,0 +1,76 @@
+﻿.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+h2 {
+    text-align: center;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(to right, #00AE72, #00c4b4);
+    border: none;
+    transition: background 0.3s ease;
+}
+
+    .btn-primary:hover {
+        background: linear-gradient(to right, #008c5a, #009f92);
+    }
+
+.list-group-item {
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+    transition: background 0.2s ease;
+}
+
+    .list-group-item:hover {
+        background: #f1f3f5;
+    }
+
+.list-group-item-primary {
+    background: #e6f3ff;
+    border-color: #00AE72;
+}
+
+    .list-group-item-primary:hover {
+        background: #d1e9ff;
+    }
+
+.list-group-item .notification-icon {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.list-group-item p {
+    margin-bottom: 0;
+    color: #333;
+}
+
+.list-group-item small {
+    color: #6c757d;
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .button-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

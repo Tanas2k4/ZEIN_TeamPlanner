@@ -102,12 +102,12 @@
                         <i class="bi bi-bell-fill"></i>
                         <span id="notificationBadge" class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle" style="display: none;"></span>
                     </a>
-                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg animate__animated animate__fadeIn" aria-labelledby="notificationDropdown" style="width: 300px;">
-                        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-                            <h6 class="mb-0">Notifications</h6>
-                            <a href="#" id="markAllRead" class="text-muted small" style="display: none;">Mark all as read</a>
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg animate__animated animate__fadeIn" aria-labelledby="notificationDropdown">
+                        <div class="notification-header">
+                            <h6>Notifications</h6>
+                            <a href="#" id="markAllRead" class="mark-all-read">Mark all as read</a>
                         </div>
-                        <div id="notificationList" class="list-group" style="max-height: 400px; overflow-y: auto;">
+                        <div id="notificationList" class="list-group">
                             <!-- Notifications loaded via AJAX -->
                         </div>
                         <div class="p-2 border-top text-center">
@@ -167,52 +167,79 @@
                 loadNotifications();
             });
 
-                            function loadNotifications() {
-            $.ajax({
-                url: "/Notifications/GetNotifications",
-                method: "GET",
-                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                success: function (response) {
-                    $("#notificationList").empty();
-                    let notifications = Array.isArray(response) ? response : (response.data || []);
-                    if (notifications.length === 0) {
-                        $("#notificationList").append('<div class="p-2 text-muted text-center">No notifications</div>');
-                        $("#markAllRead").hide();
-                    } else {
-                        // Reverse the array to show latest first
-                        notifications.reverse().forEach(notification => addNotification(notification));
-                        $("#markAllRead").show();
+            function loadNotifications() {
+                $.ajax({
+                    url: "/Notifications/GetNotifications",
+                    method: "GET",
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function (response) {
+                        $("#notificationList").empty();
+                        let notifications = Array.isArray(response) ? response : (response.data || []);
+                        if (notifications.length === 0) {
+                            $("#notificationList").append('<div class="p-2 text-muted text-center">No notifications</div>');
+                            $("#markAllRead").hide();
+                        } else {
+                            notifications.reverse().forEach(notification => addNotification(notification));
+                            $("#markAllRead").show();
+                        }
+                        updateBadge();
+                    },
+                    error: function (err) {
+                        console.error("Error loading notifications:", err);
+                        $("#notificationList").append('<div class="p-2 text-danger text-center">Error loading notifications</div>');
                     }
-                    updateBadge();
-                },
-                error: function (err) {
-                    console.error("Error loading notifications:", err);
-                    $("#notificationList").append('<div class="p-2 text-danger text-center">Error loading notifications</div>');
-                }
-            });
-        }
-
-                    function addNotification(notification) {
-            const isReadClass = notification.isRead ? "" : "list-group-item-primary";
-            let url = "#";
-            if (notification.relatedEntityType === "TaskItem") {
-                url = `/TaskItems/Details/${notification.relatedEntityId}`;
-            } else if (notification.relatedEntityType === "Group") {
-                url = `/Groups/Details/${notification.relatedEntityId}`;
-            } else if (notification.relatedEntityType === "CalendarEvent") {
-                url = `/CalendarEvents/Details/${notification.relatedEntityId}`;
+                });
             }
 
-            const notificationHtml = `
-                <a href="${url}" class="list-group-item list-group-item-action ${isReadClass}" data-notification-id="${notification.id}">
-                    <div class="d-flex w-100 justify-content-between">
-                        <small>${moment.utc(notification.createdAt).tz('Asia/Ho_Chi_Minh').format('DD/MM/YYYY, HH:mm')}</small>
-                    </div>
-                    <p class="mb-1">${notification.message}</p>
-                </a>
-            `;
-            $("#notificationList").prepend(notificationHtml);
-        }
+            function addNotification(notification) {
+                const isReadClass = notification.isRead ? "" : "list-group-item-primary";
+                let url = "#";
+                let iconClass = "";
+                if (notification.relatedEntityType === "TaskItem") {
+                    url = `/TaskItems/Details/${notification.relatedEntityId}`;
+                    iconClass = "bi-list-task";
+                } else if (notification.relatedEntityType === "Group") {
+                    url = `/Groups/Details/${notification.relatedEntityId}`;
+                    iconClass = "bi-people";
+                } else if (notification.relatedEntityType === "CalendarEvent") {
+                    url = `/CalendarEvents/Details/${notification.relatedEntityId}`;
+                    iconClass = "bi-calendar-event";
+                }
+
+                const notificationHtml = `
+                    <a href="${url}" class="list-group-item list-group-item-action ${isReadClass}" data-notification-id="${notification.id}">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <span><i class="bi ${iconClass} notification-icon"></i>${notification.message}</span>
+                            <small>${moment.utc(notification.createdAt).tz('Asia/Ho_Chi_Minh').format('DD/MM/YYYY, HH:mm')}</small>
+                        </div>
+                    </a>
+                `;
+                $("#notificationList").prepend(notificationHtml);
+
+                // Mark notification as read on click
+                $(`#notificationList a[data-notification-id="${notification.id}"]`).on("click", function (e) {
+                    if (!notification.isRead) {
+                        markNotificationAsRead(notification.id);
+                    }
+                });
+            }
+
+            function markNotificationAsRead(notificationId) {
+                $.ajax({
+                    url: "/Notifications/MarkAsRead",
+                    method: "POST",
+                    contentType: "application/json",
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    data: JSON.stringify({ notificationIds: [notificationId] }),
+                    success: function () {
+                        $(`#notificationList a[data-notification-id="${notificationId}"]`).removeClass("list-group-item-primary");
+                        updateBadge();
+                    },
+                    error: function (err) {
+                        console.error("Error marking notification as read:", err);
+                    }
+                });
+            }
 
             function updateBadge() {
                 const unreadCount = $("#notificationList .list-group-item-primary").length;
@@ -224,38 +251,31 @@
                 }
             }
 
-                            function markAllAsRead() {
-            const notificationIds = $("#notificationList .list-group-item-primary").map(function () {
-                const id = $(this).data("notification-id");
-                return isNaN(id) ? null : parseInt(id); // Validate and convert to integer
-            }).get().filter(id => id !== null); // Filter out invalid IDs
-            console.log("Marking as read - Raw IDs:", $("#notificationList .list-group-item-primary").map(function () { return $(this).data("notification-id"); }).get());
-            console.log("Marking as read - Valid IDs:", notificationIds);
+            function markAllAsRead() {
+                const notificationIds = $("#notificationList .list-group-item-primary").map(function () {
+                    const id = $(this).data("notification-id");
+                    return isNaN(id) ? null : parseInt(id);
+                }).get().filter(id => id !== null);
+                console.log("Marking as read - Valid IDs:", notificationIds);
 
-            if (notificationIds.length > 0) {
-                const token = $('input[name="__RequestVerificationToken"]').val();
-                const data = { notificationIds: notificationIds };
-                console.log("Sending data:", JSON.stringify(data));
-                $.ajax({
-                    url: "/Notifications/MarkAsRead",
-                    method: "POST",
-                    contentType: "application/json",
-                    headers: { "RequestVerificationToken": token },
-                    data: JSON.stringify(data),
-                    success: function (response) {
-                        console.log("Mark as read success:", response);
-                        $("#notificationList .list-group-item-primary").removeClass("list-group-item-primary");
-                        updateBadge();
-                        $("#markAllRead").hide();
-                    },
-                    error: function (err) {
-                        console.error("Error marking notifications as read:", err.status, err.responseText, err.responseJSON);
-                    }
-                });
-            } else {
-                console.log("No valid unread notifications to mark.");
+                if (notificationIds.length > 0) {
+                    $.ajax({
+                        url: "/Notifications/MarkAsRead",
+                        method: "POST",
+                        contentType: "application/json",
+                        headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                        data: JSON.stringify({ notificationIds: notificationIds }),
+                        success: function () {
+                            $("#notificationList .list-group-item-primary").removeClass("list-group-item-primary");
+                            updateBadge();
+                            $("#markAllRead").hide();
+                        },
+                        error: function (err) {
+                            console.error("Error marking notifications as read:", err);
+                        }
+                    });
+                }
             }
-        }
         });
     </script>
     @await RenderSectionAsync("Scripts", required: false)

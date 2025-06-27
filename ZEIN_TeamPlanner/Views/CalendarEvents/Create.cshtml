@@ -4,121 +4,153 @@
     ViewData["Title"] = "Create Event - " + ViewBag.GroupName;
 }
 
-<h2>Create Event in @ViewBag.GroupName</h2>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+<link rel="stylesheet" href="~/css/calendarEventCreate.css" />
 
-<form asp-action="Create" method="post" id="createEventForm">
-    <input type="hidden" asp-for="GroupId" />
-    <div class="form-group mb-3">
-        <label asp-for="Title" class="form-label"></label>
-        <input asp-for="Title" class="form-control" />
-        <span asp-validation-for="Title" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <label asp-for="Description" class="form-label"></label>
-        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
-        <span asp-validation-for="Description" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <label asp-for="StartTime" class="form-label"></label>
-        <input asp-for="StartTime" class="form-control" type="datetime-local" id="startTime" value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" />
-        <span asp-validation-for="StartTime" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <label asp-for="EndTime" class="form-label"></label>
-        <input asp-for="EndTime" class="form-control" type="datetime-local" id="endTime" value="@(Model.EndTime.HasValue? Model.EndTime.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
-        <span asp-validation-for="EndTime" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <label asp-for="TimeZoneId" class="form-label"></label>
-        <select asp-for="TimeZoneId" class="form-select" asp-items="ViewBag.TimeZones">
-            <option value="Asia/Ho_Chi_Minh" selected>Asia/Ho_Chi_Minh</option>
-        </select>
-        <span asp-validation-for="TimeZoneId" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <label asp-for="Type" class="form-label"></label>
-        <select asp-for="Type" class="form-select">
-            <option value="@CalendarEvent.EventType.Meeting">Meeting</option>
-            <option value="@CalendarEvent.EventType.Deadline">Deadline</option>
-            <option value="@CalendarEvent.EventType.Reminder">Reminder</option>
-        </select>
-        <span asp-validation-for="Type" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <label asp-for="IsAllDay" class="form-label"></label>
-        <input asp-for="IsAllDay" type="checkbox" class="form-check-input" />
-        <span asp-validation-for="IsAllDay" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <label class="form-label">Recurrence Rule</label>
-        <input type="hidden" asp-for="RecurrenceRule" id="rrule-input" />
-        <div id="rrule-builder">
-            <div class="mb-2">
-                <label>Frequency</label>
-                <select id="rrule-freq" class="form-select">
-                    <option value="DAILY">Daily</option>
-                    <option value="WEEKLY">Weekly</option>
-                    <option value="MONTHLY">Monthly</option>
-                    <option value="YEARLY">Yearly</option>
-                </select>
-            </div>
-            <div class="mb-2" id="rrule-byweekday" style="display:none;">
-                <label>Days</label>
-                <div>
-                    <input type="checkbox" id="rrule-mo" value="MO"> Mon
-                    <input type="checkbox" id="rrule-tu" value="TU"> Tue
-                    <input type="checkbox" id="rrule-we" value="WE"> Wed
-                    <input type="checkbox" id="rrule-th" value="TH"> Thu
-                    <input type="checkbox" id="rrule-fr" value="FR"> Fri
-                    <input type="checkbox" id="rrule-sa" value="SA"> Sat
-                    <input type="checkbox" id="rrule-su" value="SU"> Sun
-                </div>
-            </div>
-            <div class="mb-2">
-                <label>Interval</label>
-                <input type="number" id="rrule-interval" class="form-control" value="1" min="1" />
-            </div>
-            <div class="mb-2">
-                <label>End</label>
-                <select id="rrule-end" class="form-select">
-                    <option value="never">Never</option>
-                    <option value="count">After</option>
-                    <option value="until">On date</option>
-                </select>
-                <div id="rrule-count" style="display:none;">
-                    <input type="number" id="rrule-count-value" class="form-control" value="1" min="1" />
-                </div>
-                <div id="rrule-until" style="display:none;">
-                    <input type="date" id="rrule-until-value" class="form-control" />
-                </div>
-            </div>
-            <div id="rrule-preview" class="text-muted"></div>
+<div class="form-container">
+    <h2>Create Event in @ViewBag.GroupName</h2>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <span asp-validation-for="RecurrenceRule" class="text-danger"></span>
-    </div>
-    <div class="form-group mb-3">
-        <button type="submit" class="btn btn-primary">Create Event</button>
-        <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+    }
+
+    <form asp-action="Create" method="post" id="createEventForm">
+        <input type="hidden" asp-for="GroupId" />
+        <div class="form-group">
+            <label asp-for="Title" class="form-label">Title</label>
+            <input asp-for="Title" class="form-control" required />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Description" class="form-label">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="StartTime" class="form-label">Start Time</label>
+            <input asp-for="StartTime" class="form-control" type="datetime-local" id="startTime"
+                   value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" />
+            <span asp-validation-for="StartTime" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="EndTime" class="form-label">End Time</label>
+            <input asp-for="EndTime" class="form-control" type="datetime-local" id="endTime"
+                   value="@(Model.EndTime.HasValue? Model.EndTime.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
+            <span asp-validation-for="EndTime" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="TimeZoneId" class="form-label">Time Zone</label>
+            <select asp-for="TimeZoneId" class="form-select" id="timeZoneSelect" asp-items="ViewBag.TimeZones">
+                <option value="Asia/Ho_Chi_Minh" selected>Asia/Ho_Chi_Minh</option>
+            </select>
+            <span asp-validation-for="TimeZoneId" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Type" class="form-label">Event Type</label>
+            <select asp-for="Type" class="form-select" id="typeSelect">
+                <option value="@CalendarEvent.EventType.Meeting">Meeting</option>
+                <option value="@CalendarEvent.EventType.Deadline">Deadline</option>
+                <option value="@CalendarEvent.EventType.Reminder">Reminder</option>
+            </select>
+            <span asp-validation-for="Type" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="IsAllDay" class="form-label">All Day</label>
+            <input asp-for="IsAllDay" type="checkbox" class="form-check-input" id="isAllDay" />
+            <span asp-validation-for="IsAllDay" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Recurrence Rule</label>
+            <input type="hidden" asp-for="RecurrenceRule" id="rrule-input" />
+            <div id="rrule-builder">
+                <div class="mb-2">
+                    <label>Frequency</label>
+                    <select id="rrule-freq" class="form-select">
+                        <option value="DAILY">Daily</option>
+                        <option value="WEEKLY">Weekly</option>
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="YEARLY">Yearly</option>
+                    </select>
+                </div>
+                <div class="mb-2" id="rrule-byweekday" style="display:none;">
+                    <label>Days</label>
+                    <div>
+                        <input type="checkbox" id="rrule-mo" value="MO"> Mon
+                        <input type="checkbox" id="rrule-tu" value="TU"> Tue
+                        <input type="checkbox" id="rrule-we" value="WE"> Wed
+                        <input type="checkbox" id="rrule-th" value="TH"> Thu
+                        <input type="checkbox" id="rrule-fr" value="FR"> Fri
+                        <input type="checkbox" id="rrule-sa" value="SA"> Sat
+                        <input type="checkbox" id="rrule-su" value="SU"> Sun
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label>Interval</label>
+                    <input type="number" id="rrule-interval" class="form-control" value="1" min="1" />
+                </div>
+                <div class="mb-2">
+                    <label>End</label>
+                    <select id="rrule-end" class="form-select">
+                        <option value="never">Never</option>
+                        <option value="count">After</option>
+                        <option value="until">On date</option>
+                    </select>
+                    <div id="rrule-count" style="display:none;">
+                        <input type="number" id="rrule-count-value" class="form-control" value="1" min="1" />
+                    </div>
+                    <div id="rrule-until" style="display:none;">
+                        <input type="date" id="rrule-until-value" class="form-control" />
+                    </div>
+                </div>
+                <div id="rrule-preview" class="text-muted"></div>
+            </div>
+            <span asp-validation-for="RecurrenceRule" class="text-danger"></span>
+        </div>
+        <div class="button-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Create Event
+            </button>
+            <a asp-action="Index" asp-route-groupId="@Model.GroupId" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/rrule@2.7.2/dist/es5/rrule.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        $(document).ready(function () {
+            $('#timeZoneSelect').select2({
+                placeholder: "Select time zone",
+                allowClear: true
+            });
+            $('#typeSelect').select2({
+                placeholder: "Select event type",
+                allowClear: true
+            });
+
             const form = document.getElementById('createEventForm');
             const startTimeInput = document.getElementById('startTime');
             const endTimeInput = document.getElementById('endTime');
+            const isAllDayCheckbox = document.getElementById('isAllDay');
 
             form.addEventListener('submit', function (event) {
                 let isValid = true;
+                const now = new Date();
                 const startTime = new Date(startTimeInput.value);
                 const endTime = endTimeInput.value ? new Date(endTimeInput.value) : null;
 
-                if (!startTimeInput.value) {
+                if (!startTimeInput.value || startTime <= now) {
                     isValid = false;
-                    startTimeInput.setCustomValidity("Thời gian bắt đầu là bắt buộc.");
+                    startTimeInput.setCustomValidity("Thời gian bắt đầu phải lớn hơn thời điểm hiện tại.");
                     startTimeInput.reportValidity();
                 } else {
                     startTimeInput.setCustomValidity("");
@@ -137,6 +169,17 @@
                 }
             });
 
+            isAllDayCheckbox.addEventListener('change', function () {
+                if (this.checked) {
+                    startTimeInput.type = 'date';
+                    endTimeInput.disabled = true;
+                    endTimeInput.value = '';
+                } else {
+                    startTimeInput.type = 'datetime-local';
+                    endTimeInput.disabled = false;
+                }
+            });
+
             const freqSelect = document.getElementById('rrule-freq');
             const byWeekdayDiv = document.getElementById('rrule-byweekday');
             const endSelect = document.getElementById('rrule-end');
@@ -149,7 +192,7 @@
                 const freq = freqSelect.value;
                 const interval = parseInt(document.getElementById('rrule-interval').value) || 1;
                 const end = endSelect.value;
-        
+
                 let options = {
                     freq: RRule[freq],
                     interval: interval

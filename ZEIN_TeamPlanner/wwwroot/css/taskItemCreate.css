@@ -1,0 +1,95 @@
+﻿.form-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+    .form-group label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+.form-control, .form-select {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+    .form-control:focus, .form-select:focus {
+        border-color: #00AE72;
+        box-shadow: 0 0 0 0.2rem rgba(0, 174, 114, 0.25);
+    }
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-text {
+    font-size: 0.85rem;
+}
+
+.btn-primary {
+    background: linear-gradient(to right, #00AE72, #00c4b4);
+    border: none;
+}
+
+    .btn-primary:hover {
+        background: linear-gradient(to right, #008c5a, #009f92);
+    }
+
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+}
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+    }
+
+.text-danger {
+    font-size: 0.85rem;
+}
+
+.alert {
+    margin-bottom: 1.5rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.select2-container .select2-selection--single {
+    height: calc(1.5em + 1rem);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #ced4da;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 1.5em;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: calc(1.5em + 1rem);
+}
+
+@media (max-width: 576px) {
+    .form-container {
+        padding: 1rem;
+    }
+
+    .button-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

@@ -26,6 +26,87 @@ namespace ZEIN_TeamPlanner.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> Index(string nameSearch, string dateSearch, string roleSearch)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var query = _context.Groups
+                .Include(g => g.Members)
+                .Where(g => g.Members.Any(m => m.UserId == userId && m.LeftAt == null) || g.CreatedByUserId == userId);
+
+            if (!string.IsNullOrWhiteSpace(nameSearch))
+            {
+                query = query.Where(g => g.GroupName.Contains(nameSearch));
+            }
+
+            if (!string.IsNullOrWhiteSpace(dateSearch) && DateTime.TryParse(dateSearch, out var date))
+            {
+                query = query.Where(g => g.CreateAt.Date == date.Date);
+            }
+
+            if (!string.IsNullOrWhiteSpace(roleSearch))
+            {
+                if (roleSearch == "Admin")
+                {
+                    query = query.Where(g => g.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin && m.LeftAt == null));
+                }
+                else if (roleSearch == "Member")
+                {
+                    query = query.Where(g => g.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Member && m.LeftAt == null));
+                }
+            }
+
+            var groups = await query.ToListAsync();
+            ViewData["NameSearch"] = nameSearch;
+            ViewData["DateSearch"] = dateSearch;
+            ViewData["RoleSearch"] = roleSearch;
+            return View(groups);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Search(string nameSearch, string dateSearch, string roleSearch)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var query = _context.Groups
+                .Include(g => g.Members)
+                .Where(g => g.Members.Any(m => m.UserId == userId && m.LeftAt == null) || g.CreatedByUserId == userId);
+
+            if (!string.IsNullOrWhiteSpace(nameSearch))
+            {
+                query = query.Where(g => g.GroupName.Contains(nameSearch));
+            }
+
+            if (!string.IsNullOrWhiteSpace(dateSearch) && DateTime.TryParse(dateSearch, out var date))
+            {
+                query = query.Where(g => g.CreateAt.Date == date.Date);
+            }
+
+            if (!string.IsNullOrWhiteSpace(roleSearch))
+            {
+                if (roleSearch == "Admin")
+                {
+                    query = query.Where(g => g.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin && m.LeftAt == null));
+                }
+                else if (roleSearch == "Member")
+                {
+                    query = query.Where(g => g.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Member && m.LeftAt == null));
+                }
+            }
+
+            var groups = await query.Select(g => new
+            {
+                g.GroupId,
+                g.GroupName,
+                Description = g.Description != null && g.Description.Length > 50 ? g.Description.Substring(0, 50) + "..." : (g.Description ?? "Không có mô tả"),
+                MemberCount = g.Members.Count(m => m.LeftAt == null),
+                CreateAt = g.CreateAt.ToString("dd MMM yyyy"),
+                Role = g.Members.FirstOrDefault(m => m.UserId == userId && m.LeftAt == null) != null ? g.Members.FirstOrDefault(m => m.UserId == userId && m.LeftAt == null).Role.ToString() : "N/A",
+                IsAdmin = g.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin && m.LeftAt == null)
+            }).ToListAsync();
+
+            return Json(groups);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Create()
         {
             var users = await _userManager.Users
@@ -89,17 +170,6 @@ namespace ZEIN_TeamPlanner.Controllers
 
             ViewBag.IsAdmin = await _groupService.IsUserAdminAsync(id, userId);
             return View(group);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Index()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var groups = await _context.Groups
-                .Include(g => g.Members)
-                .Where(g => g.Members.Any(m => m.UserId == userId && m.LeftAt == null) || g.CreatedByUserId == userId)
-                .ToListAsync();
-            return View(groups);
         }
 
         [HttpGet]

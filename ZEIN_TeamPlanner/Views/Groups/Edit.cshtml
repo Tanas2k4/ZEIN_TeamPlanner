@@ -4,30 +4,42 @@
     ViewData["Title"] = "Edit Group";
 }
 
-<h2>Edit Group</h2>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="~/css/groupEdit.css" />
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
+<div class="form-container">
+    <h2>Edit Group</h2>
 
-<form asp-action="Edit" method="post">
-    <input type="hidden" asp-for="GroupId" />
-    <div class="form-group">
-        <label asp-for="GroupName" class="control-label"></label>
-        <input asp-for="GroupName" class="form-control" required />
-        <span asp-validation-for="GroupName" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Description" class="control-label"></label>
-        <textarea asp-for="Description" class="form-control"></textarea>
-        <span asp-validation-for="Description" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <button type="submit" class="btn btn-primary">Save</button>
-        <a asp-action="Details" asp-route-id="@Model.GroupId" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <form asp-action="Edit" method="post" id="editGroupForm">
+        <input type="hidden" asp-for="GroupId" />
+        <div class="form-group">
+            <label asp-for="GroupName" class="control-label">Group Name</label>
+            <input asp-for="GroupName" class="form-control" required />
+            <span asp-validation-for="GroupName" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Description" class="control-label">Description</label>
+            <textarea asp-for="Description" class="form-control"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+        <div class="form-group button-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Save
+            </button>
+            <a asp-action="Details" asp-route-id="@Model.GroupId" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

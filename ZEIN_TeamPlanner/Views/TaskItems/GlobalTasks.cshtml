@@ -5,74 +5,143 @@
     ViewData["Title"] = "Global Tasks";
 }
 
-<h2>Global Tasks</h2>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="~/css/taskItemGlobalTasks.css" />
+
+<div class="header-row">
+    <a asp-controller="Groups" asp-action="Index" class="btn btn-primary" style="background: linear-gradient(to right, #00AE72, #00c4b4); border: none;">
+        <i class="bi bi-arrow-left"></i> Back to Groups
+    </a>
+    <h2>Global Tasks</h2>
+    <form asp-action="GlobalTasks" method="get" class="search-filter-form">
+        <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Search title or description" />
+        </div>
+        <select name="status" class="form-select">
+            <option value="">All Statuses</option>
+            <option value="ToDo" selected="@(ViewBag.Status == "ToDo")">To Do</option>
+            <option value="InProgress" selected="@(ViewBag.Status == "InProgress")">In Progress</option>
+            <option value="Done" selected="@(ViewBag.Status == "Done")">Done</option>
+        </select>
+        <select name="assignedTo" class="form-select">
+            <option value="">All Assigned</option>
+            <option value="self" selected="@(ViewBag.AssignedTo == "self")">My Tasks</option>
+            <option value="others" selected="@(ViewBag.AssignedTo == "others")">Others' Tasks</option>
+        </select>
+    </form>
+</div>
+
+<script>
+    document.querySelectorAll('.search-filter-form input, .search-filter-form select').forEach(element => {
+        element.addEventListener('change', () => {
+            element.closest('form').submit();
+        });
+        element.addEventListener('input', () => {
+            if (element.type === 'text') {
+                element.closest('form').submit();
+            }
+        });
+    });
+</script>
 
 @if (ViewBag.Message != null)
 {
-    <div class="alert alert-info">@ViewBag.Message</div>
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        @ViewBag.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
-
-<p>
-    <a asp-controller="Groups" asp-action="Index" class="btn btn-primary">Back to Groups</a>
-</p>
 
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 }
 
 @if (Model.Any())
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Group</th>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Deadline</th>
-                <th>Assigned To</th>
-                <th>Completed At</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var task in Model)
-            {
-                <tr>
-                    <td>
-                        <a asp-controller="Groups" asp-action="Details" asp-route-id="@task.GroupId">
-                            @(task.Group?.GroupName ?? "Unknown Group")
-                        </a>
-                    </td>
-                    <td>@task.Title</td>
-                    <td>
-                        <form asp-action="UpdateStatus" method="post" style="display: flex">
+    var now = DateTime.UtcNow;
+    var sortedTasks = Model
+        .OrderBy(t => t.Status == TaskItem.TaskStatus.InProgress ? 0 : t.Status == TaskItem.TaskStatus.ToDo ? 1 : 2)
+        .ThenBy(t => t.Status == TaskItem.TaskStatus.InProgress && t.Deadline.HasValue ? t.Deadline.Value : DateTime.MaxValue)
+        .ToList();
+
+    @foreach (var task in sortedTasks)
+    {
+        var isUrgent = task.Deadline.HasValue && (task.Deadline.Value - now).TotalHours <= 24 && task.Status != TaskItem.TaskStatus.Done;
+        var headerClass = task.Status switch
+        {
+            TaskItem.TaskStatus.ToDo => "card-header-todo",
+            TaskItem.TaskStatus.InProgress => "card-header-inprogress",
+            TaskItem.TaskStatus.Done => "card-header-done",
+            _ => "card-header-todo"
+        };
+
+        <div class="task-card card @(isUrgent ? "urgent-task" : "")">
+            <div class="card-header @headerClass">
+                <h5 class="mb-0">
+                    <a asp-controller="Groups" asp-action="Details" asp-route-id="@task.GroupId" class="text-dark text-decoration-none">
+                        @(task.Group?.GroupName ?? "Unknown Group")
+                    </a>
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-title">
+                    @if (task.Status == TaskItem.TaskStatus.Done)
+                    {
+                        <i class="bi bi-check-circle-fill"></i>
+                    }
+                    @task.Title
+                </h6>
+                <div class="task-details">
+                    <div>
+                        <strong>Status:</strong>
+                        <form asp-action="UpdateStatus" method="post" class="status-form">
                             <input type="hidden" name="taskId" value="@task.TaskItemId" />
                             <select name="status" class="form-select form-select-sm">
                                 <option value="ToDo" selected="@(task.Status == TaskItem.TaskStatus.ToDo)">To Do</option>
                                 <option value="InProgress" selected="@(task.Status == TaskItem.TaskStatus.InProgress)">In Progress</option>
                                 <option value="Done" selected="@(task.Status == TaskItem.TaskStatus.Done)">Done</option>
                             </select>
-                            <button type="submit" class="btn btn-sm btn-primary mt-1">Save</button>
+                            <button type="submit" class="icon-btn save" title="Save">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
                         </form>
-                    </td>
-                    <td>@(task.Deadline?.ToString("dd MMM yyyy HH:mm") ?? "None")</td>
-                    <td>@(task.AssignedToUser?.FullName ?? "Unassigned")</td>
-                    <td>@(task.CompletedAt?.ToString("dd MMM yyyy HH:mm") ?? "Not completed")</td>
-                    <td>
-                        <a asp-action="Details" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-info">Details</a>
-                        @if (task.Group?.Members != null && task.Group.Members.Any(m => m.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
-                        {
-                            <a asp-action="Edit" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-secondary">Edit</a>
-                            <a asp-action="Delete" asp-route-id="@task.TaskItemId" class="btn btn-sm btn-danger">Delete</a>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                    </div>
+                    <div>
+                        <strong>Deadline:</strong> @(task.Deadline?.ToString("dd MMM yyyy HH:mm") ?? "None")
+                    </div>
+                    <div>
+                        <strong>Assigned To:</strong> @(task.AssignedToUser?.FullName ?? "Unassigned")
+                    </div>
+                    <div>
+                        <strong>Completed At:</strong> @(task.CompletedAt?.ToString("dd MMM yyyy HH:mm") ?? "Not completed")
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer action-buttons">
+                <a asp-action="Details" asp-route-id="@task.TaskItemId" class="icon-btn info" title="View Details">
+                    <i class="bi bi-eye"></i>
+                </a>
+                @if (task.Group?.Members != null && task.Group.Members.Any(m => m.UserId == User.FindFirstValue(ClaimTypes.NameIdentifier) && m.Role == GroupRole.Admin))
+                {
+                    <a asp-action="Edit" asp-route-id="@task.TaskItemId" class="icon-btn secondary" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@task.TaskItemId" class="icon-btn danger" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                }
+            </div>
+        </div>
+    }
 }
 else
 {
-    <p>No tasks found. Join or create a group to start adding tasks!</p>
+    <div class="alert alert-warning">
+        No tasks found. Join or create a group to start adding tasks!
+    </div>
 }

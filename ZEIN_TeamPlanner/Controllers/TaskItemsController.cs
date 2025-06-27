@@ -28,29 +28,48 @@ namespace ZEIN_TeamPlanner.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int groupId)
+        public async Task<IActionResult> Index(int groupId, string search, string status, string assignedTo)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!await _groupService.CanAccessGroupAsync(groupId, userId))
                 return Forbid();
 
             var isMember = !await _groupService.IsUserAdminAsync(groupId, userId);
-            var tasks = await _context.TaskItems
+            var query = _context.TaskItems
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Priority)
-                .Where(t => t.GroupId == groupId)
-                .OrderBy(t => t.Deadline.HasValue ? 0 : 1)
-                .ThenBy(t => t.Deadline)
+                .Where(t => t.GroupId == groupId);
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(t => t.Title.Contains(search) || t.Description.Contains(search));
+            }
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<TaskItem.TaskStatus>(status, out var statusFilter))
+            {
+                query = query.Where(t => t.Status == statusFilter);
+            }
+            if (!string.IsNullOrEmpty(assignedTo))
+            {
+                query = query.Where(t => assignedTo == "self" ? t.AssignedToUserId == userId : t.AssignedToUserId != userId);
+            }
+
+            var tasks = await query
+                .OrderBy(t => t.Status == TaskItem.TaskStatus.InProgress ? 0 : t.Status == TaskItem.TaskStatus.ToDo ? 1 : 2)
+                .ThenBy(t => t.Status == TaskItem.TaskStatus.InProgress && t.Deadline.HasValue ? t.Deadline.Value : DateTime.MaxValue)
                 .ToListAsync();
 
             ViewBag.GroupId = groupId;
             ViewBag.GroupName = (await _context.Groups.FindAsync(groupId))?.GroupName;
             ViewBag.IsMember = isMember;
+            ViewBag.Search = search;
+            ViewBag.Status = status;
+            ViewBag.AssignedTo = assignedTo;
             return View(tasks);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GlobalTasks()
+        public async Task<IActionResult> GlobalTasks(string search, string status, string assignedTo)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var groupIds = await _context.GroupMembers
@@ -59,20 +78,39 @@ namespace ZEIN_TeamPlanner.Controllers
                 .Union(_context.Groups.Where(g => g.CreatedByUserId == userId).Select(g => g.GroupId))
                 .ToListAsync();
 
-            var tasks = await _context.TaskItems
+            var query = _context.TaskItems
                 .Include(t => t.Group).ThenInclude(g => g.Members)
                 .Include(t => t.Priority)
                 .Include(t => t.AssignedToUser)
-                .Where(t => groupIds.Contains(t.GroupId))
-                .OrderBy(t => t.Deadline.HasValue ? 0 : 1)
-                .ThenBy(t => t.Deadline)
+                .Where(t => groupIds.Contains(t.GroupId));
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(t => t.Title.Contains(search) || t.Description.Contains(search));
+            }
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<TaskItem.TaskStatus>(status, out var statusFilter))
+            {
+                query = query.Where(t => t.Status == statusFilter);
+            }
+            if (!string.IsNullOrEmpty(assignedTo))
+            {
+                query = query.Where(t => assignedTo == "self" ? t.AssignedToUserId == userId : t.AssignedToUserId != userId);
+            }
+
+            var tasks = await query
+                .OrderBy(t => t.Status == TaskItem.TaskStatus.InProgress ? 0 : t.Status == TaskItem.TaskStatus.ToDo ? 1 : 2)
+                .ThenBy(t => t.Status == TaskItem.TaskStatus.InProgress && t.Deadline.HasValue ? t.Deadline.Value : DateTime.MaxValue)
                 .ToListAsync();
 
-            if (!tasks.Any())
+            if (!tasks.Any() && string.IsNullOrEmpty(search) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(assignedTo))
             {
                 ViewBag.Message = "Bạn chưa có nhiệm vụ nào. Hãy tham gia hoặc tạo một nhóm để bắt đầu.";
             }
 
+            ViewBag.Search = search;
+            ViewBag.Status = status;
+            ViewBag.AssignedTo = assignedTo;
             return View(tasks);
         }
 
@@ -163,7 +201,7 @@ namespace ZEIN_TeamPlanner.Controllers
 
             try
             {
-                var task = await _taskService.CreateTaskAsync(dto, userId); // Assume returns TaskItem
+                var task = await _taskService.CreateTaskAsync(dto, userId);
                 if (!string.IsNullOrEmpty(dto.AssignedToUserId))
                 {
                     var loadedTask = await _context.TaskItems

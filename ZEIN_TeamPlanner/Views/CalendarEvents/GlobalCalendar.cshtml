@@ -2,18 +2,42 @@
     ViewData["Title"] = "Global Calendar";
 }
 
-<h2>Global Calendar</h2>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="~/css/calendarEventGlobalCalendar.css" />
 
-@if (ViewBag.Message != null)
-{
-    <div class="alert alert-info">@ViewBag.Message</div>
-}
+<div class="container">
+    <h2>Global Calendar</h2>
 
-<p>
-    <a asp-controller="Groups" asp-action="Index" class="btn btn-primary">Back to Groups</a>
-</p>
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            @ViewBag.Message
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-<div id="calendar"></div>
+    <div class="button-group">
+        <a asp-controller="Groups" asp-action="Index" class="btn btn-primary">
+            <i class="bi bi-arrow-left-circle"></i> Back to Groups
+        </a>
+    </div>
+
+    <div id="calendar"></div>
+</div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
@@ -35,38 +59,12 @@
                 eventClick: function (info) {
                     info.jsEvent.preventDefault();
                     var props = info.event.extendedProps;
-                    var content = '<h5>' + info.event.title + '</h5>' +
-                        '<p><strong>Group:</strong> ' + props.groupName + '</p>' +
-                        '<p><strong>Description:</strong> ' + (props.description || 'None') + '</p>' +
-                        '<p><strong>Time Zone:</strong> ' + props.timeZone + '</p>';
+                    var id = info.event.id.replace('event-', '').replace('task-', '');
                     if (props.type === 'Task') {
-                        content += '<p><strong>Status:</strong> ' + (props.status || 'None') + '</p>' +
-                            '<p><strong>Priority:</strong> ' + (props.priority || 'None') + '</p>' +
-                            '<p><strong>Assignee:</strong> ' + (props.assignee || 'Unassigned') + '</p>' +
-                            '<p><a href="' + props.taskUrl + '" class="btn btn-primary btn-sm">View Task Details</a></p>';
+                        window.location.href = '@Url.Action("Details", "TaskItems")/' + id;
                     } else {
-                        content += '<p><a href="@Url.Action("Details", "CalendarEvents")/' + info.event.id.replace('event-', '') + '" class="btn btn-primary btn-sm">View Event Details</a></p>';
+                        window.location.href = '@Url.Action("Details", "CalendarEvents")/' + id;
                     }
-
-                    var popover = document.createElement('div');
-                    popover.className = 'popover';
-                    popover.style.position = 'absolute';
-                    popover.style.left = (info.jsEvent.pageX + 10) + 'px';
-                    popover.style.top = (info.jsEvent.pageY + 10) + 'px';
-                    popover.style.background = '#fff';
-                    popover.style.border = '1px solid #ccc';
-                    popover.style.padding = '15px';
-                    popover.style.zIndex = '1000';
-                    popover.style.maxWidth = '300px';
-                    popover.innerHTML = content;
-                    document.body.appendChild(popover);
-
-                    document.addEventListener('click', function closePopover(e) {
-                        if (!popover.contains(e.target)) {
-                            popover.remove();
-                            document.removeEventListener('click', closePopover);
-                        }
-                    });
                 },
                 eventDrop: function (info) {
                     if (info.event.extendedProps.type === 'Task') {
@@ -91,8 +89,7 @@
                 },
                 eventDidMount: function (info) {
                     if (info.event.extendedProps.type === 'Task') {
-                        info.el.style.backgroundColor = '#ff9800'; // Orange for tasks
-                        info.el.style.borderColor = '#ff9800';
+                        info.el.classList.add('task');
                         if (info.event.extendedProps.status === 'Done') {
                             var titleElement = info.el.querySelector('.fc-event-title');
                             if (titleElement) {
@@ -100,14 +97,11 @@
                             }
                         }
                     } else if (info.event.extendedProps.type === 'Meeting') {
-                        info.el.style.backgroundColor = '#3788d8'; // Blue for meetings
-                        info.el.style.borderColor = '#3788d8';
+                        info.el.classList.add('meeting');
                     } else if (info.event.extendedProps.type === 'Deadline') {
-                        info.el.style.backgroundColor = '#d83737'; // Red for deadlines
-                        info.el.style.borderColor = '#d83737';
+                        info.el.classList.add('deadline');
                     } else if (info.event.extendedProps.type === 'Reminder') {
-                        info.el.style.backgroundColor = '#37d86e'; // Green for reminders
-                        info.el.style.borderColor = '#37d86e';
+                        info.el.classList.add('reminder');
                     }
                 }
             });
@@ -129,6 +123,9 @@
                     if (!response.ok) {
                         alert('Không thể cập nhật thời gian sự kiện.');
                         calendar.refetchEvents();
+                    } else {
+                        // Optional: Add TempData success message via JavaScript
+                        // Could use a toast notification library if desired
                     }
                 })
                 .catch(() => {
@@ -140,10 +137,4 @@
             calendar.render();
         });
     </script>
-    <style>
-        .popover {
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-            border-radius: 5px;
-        }
-    </style>
 }

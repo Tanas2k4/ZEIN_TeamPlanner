@@ -50,6 +50,17 @@
             <span asp-validation-for="Status" class="text-danger"></span>
         </div>
         <div class="form-group">
+            <label asp-for="AssignedToUserId" class="form-label">Assigned To</label>
+            <select asp-for="AssignedToUserId" class="form-select" id="assigneeSelect">
+                <option value="">Unassigned</option>
+                @foreach (var member in ViewBag.Members)
+                {
+                    <option value="@member.UserId">@member.FullName</option>
+                }
+            </select>
+            <span asp-validation-for="AssignedToUserId" class="text-danger"></span>
+        </div>
+        <div class="form-group">
             <label asp-for="PriorityId" class="form-label">Priority</label>
             <select asp-for="PriorityId" class="form-select" id="prioritySelect">
                 <option value="">None</option>

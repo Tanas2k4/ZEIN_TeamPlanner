@@ -26,5 +26,9 @@ namespace ZEIN_TeamPlanner.Models
         public Priority? Priority { get; set; }
         public string? Tags { get; set; } // Comma-separated or JSON for simple tagging
         public DateTime? CompletedAt { get; set; } // When task is marked Done
+
+        //Time wh task was last updated
+        public DateTime UpdatedAt { get; set; }
+        public DateTime? StatusChangedAt { get; set; }
     }
 }

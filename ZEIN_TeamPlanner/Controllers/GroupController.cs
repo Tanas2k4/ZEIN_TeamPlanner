@@ -425,5 +425,51 @@ namespace ZEIN_TeamPlanner.Controllers
                 return RedirectToAction(nameof(Details), new { id = groupId });
             }
         }
+
+
+        //Hàm lấy dữ liệu cho biểu đồ nhiệm vụ nhóm
+        [HttpGet]
+        public async Task<IActionResult> GetTasks(int groupId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var group = await _context.Groups
+                .Include(g => g.Members)
+                .FirstOrDefaultAsync(g => g.GroupId == groupId);
+
+            if (group == null)
+            {
+                return NotFound(new { error = "Group not found." });
+            }
+
+            var isMember = group.Members.Any(m => m.UserId == userId && m.LeftAt == null);
+            if (!isMember)
+            {
+                return Forbid();
+            }
+
+            var tasks = await _context.TaskItems
+                .Where(t => t.GroupId == groupId)
+                .Select(t => new
+                {
+                    Status = t.Status.ToString(),
+                    CreatedAt = t.CreatedAt.ToString("yyyy-MM-dd")
+                })
+                .ToListAsync();
+
+            var statusCounts = tasks
+                .GroupBy(t => t.Status)
+                .Select(g => new
+                {
+                    Status = g.Key,
+                    Count = g.Count()
+                })
+                .ToList();
+
+            return Json(new
+            {
+                Tasks = tasks,
+                StatusCounts = statusCounts
+            });
+        }
     }
 }

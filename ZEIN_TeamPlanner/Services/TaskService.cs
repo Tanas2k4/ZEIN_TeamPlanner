@@ -36,6 +36,8 @@ namespace ZEIN_TeamPlanner.Services
             if (dto.Deadline.HasValue && dto.Deadline <= DateTime.UtcNow)
                 throw new InvalidOperationException("Hạn chót phải lớn hơn thời điểm hiện tại.");
 
+            var now = DateTime.UtcNow;
+
             var task = new TaskItem
             {
                 Title = dto.Title,
@@ -46,8 +48,10 @@ namespace ZEIN_TeamPlanner.Services
                 GroupId = dto.GroupId,
                 PriorityId = dto.PriorityId,
                 Tags = dto.Tags,
-                CreatedAt = DateTime.UtcNow,
-                CompletedAt = dto.Status == TaskItem.TaskStatus.Done ? DateTime.UtcNow : null
+                CreatedAt = now,
+                UpdatedAt = now,
+                StatusChangedAt = now,
+                CompletedAt = dto.Status == TaskItem.TaskStatus.Done ? now : null
             };
 
             _context.TaskItems.Add(task);
@@ -83,6 +87,9 @@ namespace ZEIN_TeamPlanner.Services
             if (dto.Deadline.HasValue && dto.Deadline <= DateTime.UtcNow)
                 throw new InvalidOperationException("Hạn chót phải lớn hơn thời điểm hiện tại.");
 
+            var now = DateTime.UtcNow;
+            var previousStatus = task.Status;
+
             task.Title = dto.Title;
             task.Description = dto.Description;
             task.Status = dto.Status;
@@ -90,7 +97,14 @@ namespace ZEIN_TeamPlanner.Services
             task.AssignedToUserId = dto.AssignedToUserId;
             task.PriorityId = dto.PriorityId;
             task.Tags = dto.Tags;
-            task.CompletedAt = dto.Status == TaskItem.TaskStatus.Done ? DateTime.UtcNow : null;
+            task.UpdatedAt = now;
+
+            if (previousStatus != dto.Status)
+            {
+                task.StatusChangedAt = now;
+            }
+
+            task.CompletedAt = dto.Status == TaskItem.TaskStatus.Done ? now : null;
 
             await _context.SaveChangesAsync();
             return task;
@@ -137,8 +151,18 @@ namespace ZEIN_TeamPlanner.Services
             if (!await CanAccessTaskAsync(taskId, userId))
                 throw new UnauthorizedAccessException("Bạn không có quyền cập nhật trạng thái nhiệm vụ này.");
 
+            var now = DateTime.UtcNow;
+            var previousStatus = task.Status;
+
             task.Status = status;
-            task.CompletedAt = status == TaskItem.TaskStatus.Done ? DateTime.UtcNow : null;
+            task.UpdatedAt = now;
+
+            if (previousStatus != status)
+            {
+                task.StatusChangedAt = now;
+            }
+
+            task.CompletedAt = status == TaskItem.TaskStatus.Done ? now : null;
 
             await _context.SaveChangesAsync();
         }

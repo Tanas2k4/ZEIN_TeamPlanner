@@ -63,7 +63,6 @@
 
     <!-- Group Details and User Information -->
     <div class="details-row">
-        <!-- Group Details Card -->
         <div class="card details-card">
             <div class="card-header">
                 <i class="bi bi-info-circle"></i> Group Details
@@ -81,8 +80,6 @@
                 </dl>
             </div>
         </div>
-
-        <!-- User Information Card -->
         <div class="card role-card">
             <div class="card-header">
                 <i class="bi bi-person-circle"></i> Your Information
@@ -114,6 +111,28 @@
         </div>
     </div>
 
+    <!-- Charts Row -->
+    <div class="details-row mb-4">
+        <!-- Bar Chart -->
+        <div class="card bar-card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart"></i> Task Progress by Date
+            </div>
+            <div class="card-body">
+                <canvas id="bar-chart" style="max-height: 400px; width: 100%;"></canvas>
+            </div>
+        </div>
+        <!-- Pie Chart -->
+        <div class="card pie-card">
+            <div class="card-header">
+                <i class="bi bi-pie-chart"></i> Task Status Distribution
+            </div>
+            <div class="card-body">
+                <canvas id="pie-chart" style="max-height: 400px; width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Members Card -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -126,7 +145,6 @@
             }
         </div>
         <div class="card-body">
-            <!-- Invite Member Form (Collapsible) -->
             @if (ViewBag.IsAdmin)
             {
                 <div class="collapse mb-3" id="inviteForm">
@@ -142,8 +160,6 @@
                     </form>
                 </div>
             }
-
-            <!-- Members Table -->
             @if (Model.Members.Any(m => m.LeftAt == null))
             {
                 <table class="table table-striped">
@@ -207,3 +223,113 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Kiểm tra thư viện
+            if (typeof $ === 'undefined') {
+                console.error("jQuery is not loaded at", new Date().toISOString());
+                $("#bar-chart").parent().html('<div class="empty-state"><i class="bi bi-bar-chart display-4"></i><p>jQuery not loaded.</p></div>');
+                $("#pie-chart").parent().html('<div class="empty-state"><i class="bi bi-pie-chart display-4"></i><p>jQuery not loaded.</p></div>');
+                return;
+            }
+            if (typeof Chart === 'undefined') {
+                console.error("Chart.js is not loaded at", new Date().toISOString());
+                $("#bar-chart").parent().html('<div class="empty-state"><i class="bi bi-bar-chart display-4"></i><p>Chart.js not loaded.</p></div>');
+                $("#pie-chart").parent().html('<div class="empty-state"><i class="bi bi-pie-chart display-4"></i><p>Chart.js not loaded.</p></div>');
+                return;
+            }
+
+            // Lấy dữ liệu tasks từ server
+            $.ajax({
+                url: "/Groups/GetTasks",
+                method: "GET",
+                data: { groupId: @Model.GroupId },
+                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                success: function (response) {
+                    console.log("Data fetched at", new Date().toISOString(), ":", JSON.stringify(response, null, 2));
+
+                    // Bar Chart
+                    var tasks = response.tasks || [];
+                    if (tasks.length === 0) {
+                        console.warn("No tasks available for GroupId: @Model.GroupId at", new Date().toISOString());
+                        $("#bar-chart").parent().html('<div class="empty-state"><i class="bi bi-bar-chart display-4"></i><p>No tasks available.</p></div>');
+                    } else {
+                        var tasksByDate = tasks.reduce((acc, task) => {
+                            acc[task.createdAt] = acc[task.createdAt] || { ToDo: 0, InProgress: 0, Done: 0, Blocked: 0 };
+                            acc[task.createdAt][task.status] = (acc[task.createdAt][task.status] || 0) + 1;
+                            return acc;
+                        }, {});
+                        var labels = Object.keys(tasksByDate);
+                        var datasets = [
+                            { label: 'ToDo', data: labels.map(date => tasksByDate[date].ToDo || 0), backgroundColor: '#00c4b4' },
+                            { label: 'InProgress', data: labels.map(date => tasksByDate[date].InProgress || 0), backgroundColor: '#ffc107' },
+                            { label: 'Done', data: labels.map(date => tasksByDate[date].Done || 0), backgroundColor: '#00AE72' },
+                            { label: 'Blocked', data: labels.map(date => tasksByDate[date].Blocked || 0), backgroundColor: '#ff6b6b' }
+                        ];
+                        var ctxBar = document.getElementById('bar-chart').getContext('2d');
+                        new Chart(ctxBar, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    x: { title: { display: true, text: 'Date' } },
+                                    y: { title: { display: true, text: 'Number of Tasks' }, beginAtZero: true }
+                                },
+                                plugins: {
+                                    legend: { position: 'top', labels: { font: { size: 12, family: 'Roboto' }, color: '#003825' } }
+                                }
+                            }
+                        });
+                    }
+
+                    // Pie Chart
+                    var statusCounts = response.statusCounts;
+                    if (!statusCounts || statusCounts.length === 0) {
+                        console.warn("No status counts available for GroupId: @Model.GroupId at", new Date().toISOString());
+                        $("#pie-chart").parent().html('<div class="empty-state"><i class="bi bi-pie-chart display-4"></i><p>No status data available.</p></div>');
+                        return;
+                    }
+
+                    var labels = statusCounts.map(sc => sc.status.replace("InProgress", "In Progress").replace("ToDo", "To Do"));
+                    var data = statusCounts.map(sc => sc.count);
+                    var ctxPie = document.getElementById('pie-chart').getContext('2d');
+                    new Chart(ctxPie, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: data,
+                                backgroundColor: ['#00c4b4', '#ffc107', '#00AE72', '#ff6b6b'],
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        font: { size: 12, family: 'Roboto' },
+                                        color: '#003825'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+                error: function (err) {
+                    console.error("Error fetching data at", new Date().toISOString(), ":", err.status, JSON.stringify(err.responseText, null, 2));
+                    $("#bar-chart").parent().html('<div class="empty-state"><i class="bi bi-bar-chart display-4"></i><p>Error loading tasks: ' + (err.responseText || 'Unknown error') + '</p></div>');
+                    $("#pie-chart").parent().html('<div class="empty-state"><i class="bi bi-pie-chart display-4"></i><p>Error loading tasks: ' + (err.responseText || 'Unknown error') + '</p></div>');
+                }
+            });
+        });
+    </script>
+}

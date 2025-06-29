@@ -33,6 +33,14 @@
     flex: 2;
 }
 
+.bar-card {
+    flex: 3; /* 60% width */
+}
+
+.pie-card {
+    flex: 2; /* 40% width */
+}
+
 .card {
     background: #fff;
     border-radius: 12px;
@@ -115,7 +123,7 @@
     color: #00AE72;
     font-size: 0.9rem;
     transition: all 0.3s ease;
-    width: 90px
+    width: 90px;
 }
 
     .btn-outline-primary:hover {
@@ -135,7 +143,7 @@
     .btn-outline-info:hover {
         background-color: #fff;
         color: #00c4b4;
-        border: 2px solid #00c4b4
+        border: 2px solid #00c4b4;
     }
 
 .btn-outline-danger {
@@ -170,7 +178,7 @@
     width: 100px;
     padding: 8px;
     background: linear-gradient(to right, #00AE72, #00c4b4);
-    border-radius: 8px
+    border-radius: 8px;
 }
 
     .btn-outline-secondary:hover {
@@ -195,18 +203,4 @@
 .btn {
     border-radius: 8px;
     padding: 8px 12px;
-}
-
-.action-buttons .btn {
-    padding: 8px;
-    width: 80px;
-}
-
-.collapse {
-    transition: all 0.3s ease;
-}
-
-dl.row dt, dl.row dd {
-    color: #003825;
-    font-size: 0.9rem;
 }

@@ -552,6 +552,9 @@ namespace ZEIN_TeamPlanner.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("StatusChangedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Tags")
                         .HasColumnType("nvarchar(max)");
 
@@ -559,6 +562,9 @@ namespace ZEIN_TeamPlanner.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("TaskItemId");
 

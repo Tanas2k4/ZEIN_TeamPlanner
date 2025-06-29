@@ -1,13 +1,177 @@
-﻿
+﻿@using System.Security.Claims
+@using ZEIN_TeamPlanner.Models
+@model DashboardViewModel
 @{
-    ViewData["Title"] = "Bảng điều khiển";
+    ViewData["Title"] = "Dashboard";
+    var currentUserId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 }
 
-<h3 style="text-align: center">FOUNDED BY</h3>
-<br />
-<div style="text-align: center; font-family: 'Courier New'">
-    <h1 style="color: #00AE72; font-weight: bolder">ZEIN</h1>
-    <h2>Trần Trọng Tấn - Phạm Hoàng Tuấn Kha - Trương Công Viên</h2>
-    <img src="~/images/logo.png" style="display: block; margin: 0 auto" alt="ZEIN Team" />
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.css" rel="stylesheet">
+    <link href="~/css/dashboardIndex.css" rel="stylesheet" />
+</head>
+
+<div class="dashboard-container">
+    <!-- Stats Section -->
+    <div class="stats-card">
+        <div class="stat-box" id="liveClock">
+            <h6>Live Clock</h6>
+            <p id="clockDisplay"></p>
+        </div>
+        <div class="stat-box">
+            <h6>Assigned Tasks</h6>
+            <p>@Model.ProjectCount</p>
+        </div>
+        <div class="stat-box">
+            <h6>Task Complete</h6>
+            <div class="progress">
+                <div class="progress-bar bg-success progress-bar-animated" style="width: @(Model.ProjectCount > 0 ? (Model.CompletedProjectCount / (double)Model.ProjectCount) * 100 : 0)%" role="progressbar" aria-valuenow="@Model.CompletedProjectCount" aria-valuemin="0" aria-valuemax="@Model.ProjectCount"></div>
+            </div>
+            <p>@Model.CompletedProjectCount / @Model.ProjectCount</p>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="chart-container">
+        <div class="chart-card">
+            <div class="card-header">Task Complete</div>
+            <canvas id="lineChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <div class="card-header">Task Status Report</div>
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Assigned Tasks List -->
+    <div class="tasks-list">
+        <div class="card card-custom">
+            <div class="card-header">Recent Assigned Tasks</div>
+            <div class="card-body">
+                @if (Model.RecentTasks != null && Model.RecentTasks.Any())
+                {
+                    <ul class="list-group">
+                        @foreach (var task in Model.RecentTasks)
+                        {
+                            <li class="list-group-item">
+                                <strong>@task.Title</strong>
+                                <span class="badge @(task.Status == TaskItem.TaskStatus.Done ? "bg-success" : task.Status == TaskItem.TaskStatus.InProgress ? "bg-info" : task.Status == TaskItem.TaskStatus.Blocked ? "bg-warning" : "bg-secondary")">
+                                    @task.Status
+                                </span>
+                                <small class="text-muted"> - Deadline: @(task.Deadline?.ToString("dd/MM/yyyy") ?? "N/A")</small>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-center text-muted">No tasks assigned yet.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="user-table">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>User</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.Collaborators)
+                {
+                    <tr>
+                        <td><img src="@user.AvatarUrl" alt="@user.FullName" style="width: 30px; border-radius: 50%; margin-right: 10px;" /> @user.FullName (@user.UserName)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
 
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script>
+        // Live Clock
+        function updateClock() {
+            const now = new Date();
+            const options = { timeZone: 'Asia/Ho_Chi_Minh', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const timeString = now.toLocaleTimeString('en-US', options);
+            document.getElementById('clockDisplay').textContent = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Line Chart for Task Complete
+        const ctxLine = document.getElementById('lineChart').getContext('2d');
+        new Chart(ctxLine, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.ProjectProgressDates)),
+                datasets: [{
+                    label: 'ToDo',
+                    data: @Html.Raw(Json.Serialize(Model.ToDoProjects)),
+                    borderColor: '#ff6384',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: true
+                }, {
+                    label: 'InProgress',
+                    data: @Html.Raw(Json.Serialize(Model.InProgressProjects)),
+                    borderColor: '#36a2eb',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    fill: true
+                }, {
+                    label: 'Done',
+                    data: @Html.Raw(Json.Serialize(Model.AchievedProjects)),
+                    borderColor: '#32cd32',
+                    backgroundColor: 'rgba(50, 205, 50, 0.2)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: 'Date' } },
+                    y: { beginAtZero: true, title: { display: true, text: 'Number of Tasks' } }
+                }
+            }
+        });
+
+        // Pie Chart for Task Status Report
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: ['ToDo', 'InProgress', 'Blocked', 'Done'],
+                datasets: [{
+                    data: [
+                        @Html.Raw(Json.Serialize(Model.ToDoProjects.Sum())),
+                        @Html.Raw(Json.Serialize(Model.InProgressProjects.Sum())),
+                        @Html.Raw(Json.Serialize(Model.BlockedProjects.Sum())),
+                        @Html.Raw(Json.Serialize(Model.AchievedProjects.Sum()))
+                    ],
+                    backgroundColor: ['#ff6384', '#36a2eb', '#ffcd56', '#32cd32'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw + ' tasks';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}

@@ -257,7 +257,7 @@ namespace ZEIN_TeamPlanner.Controllers
             var invitedUser = await _userManager.FindByEmailAsync(email);
             if (invitedUser == null)
             {
-                TempData["Error"] = "Không tìm thấy người dùng với email này.";
+                TempData["Error"] = "Can't find user with this email.";
                 return RedirectToAction(nameof(Details), new { id = groupId });
             }
 
@@ -273,7 +273,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 .FirstOrDefaultAsync(gm => gm.GroupId == groupId && gm.UserId == invitedUser.Id && gm.LeftAt == null);
             if (existingMember != null)
             {
-                TempData["Error"] = "Người dùng này đã là thành viên của nhóm.";
+                TempData["Error"] = "This user has already a member of this group.";
                 return RedirectToAction(nameof(Details), new { id = groupId });
             }
 
@@ -290,13 +290,13 @@ namespace ZEIN_TeamPlanner.Controllers
 
             await _notificationService.CreateNotificationAsync(
                 invitedUser.Id,
-                $"Bạn đã được mời tham gia nhóm '{group.GroupName}'.",
+                $"You have joined '{group.GroupName}'.",
                 "GroupInvite",
                 groupId.ToString(),
                 "Group"
             );
 
-            TempData["Success"] = $"Đã mời {invitedUser.FullName} vào nhóm với vai trò Member.";
+            TempData["Success"] = $"Invited {invitedUser.FullName} as a member.";
             return RedirectToAction(nameof(Details), new { id = groupId });
         }
 
@@ -314,20 +314,20 @@ namespace ZEIN_TeamPlanner.Controllers
                 await _groupService.RemoveMemberAsync(groupId, memberId, userId);
                 await _notificationService.CreateNotificationAsync(
                     memberId,
-                    $"Bạn đã bị xóa khỏi nhóm '{group.GroupName}'.",
+                    $"You have been removed from '{group.GroupName}'.",
                     "GroupMemberRemoved",
                     groupId.ToString(),
                     "Group"
                 );
-                TempData["Success"] = "Xóa thành viên khỏi nhóm thành công.";
+                TempData["Success"] = "Removed the member successfully.";
             }
             catch (KeyNotFoundException)
             {
-                TempData["Error"] = "Nhóm hoặc thành viên không tồn tại.";
+                TempData["Error"] = "This group or member does not exist.";
             }
             catch (UnauthorizedAccessException)
             {
-                TempData["Error"] = "Bạn không có quyền xóa thành viên.";
+                TempData["Error"] = "You don't have permision to do this.";
             }
             return RedirectToAction(nameof(Details), new { id = groupId });
         }
@@ -363,17 +363,17 @@ namespace ZEIN_TeamPlanner.Controllers
                 await _groupService.DeleteGroupAsync(id, userId);
                 await _notificationService.CreateNotificationAsync(
                     userId,
-                    $"Nhóm '{group.GroupName}' đã được xóa thành công.",
+                    $"'{group.GroupName}' has been deleted.",
                     "GroupDeleted",
                     id.ToString(),
                     "Group"
                 );
-                TempData["Success"] = "Xóa nhóm thành công.";
+                TempData["Success"] = "deleted succesfully.";
                 return RedirectToAction(nameof(Index));
             }
             catch (KeyNotFoundException)
             {
-                TempData["Error"] = "Nhóm không tồn tại.";
+                TempData["Error"] = "Group does not exist.";
                 return RedirectToAction(nameof(Index));
             }
             catch (UnauthorizedAccessException)
@@ -405,18 +405,18 @@ namespace ZEIN_TeamPlanner.Controllers
                 {
                     await _notificationService.CreateNotificationAsync(
                         adminId,
-                        $"Thành viên đã rời nhóm '{group.GroupName}'.",
+                        $"This member has left '{group.GroupName}'.",
                         "GroupMemberLeft",
                         groupId.ToString(),
                         "Group"
                     );
                 }
-                TempData["Success"] = "Bạn đã rời nhóm thành công.";
+                TempData["Success"] = "You have left the group.";
                 return RedirectToAction(nameof(Index));
             }
             catch (KeyNotFoundException)
             {
-                TempData["Error"] = "Nhóm không tồn tại.";
+                TempData["Error"] = "Group does not exist.";
                 return RedirectToAction(nameof(Details), new { id = groupId });
             }
             catch (InvalidOperationException ex)

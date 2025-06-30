@@ -58,10 +58,10 @@
             <a class="nav-link @(currentController == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index" data-bs-toggle="tooltip" title="Go to Dashboard">
                 <i class="bi bi-grid me-2"></i> Dashboard
             </a>
-            <a class="nav-link @(currentController == "Messages" ? "active" : "")" asp-controller="Messages" asp-action="Index" data-bs-toggle="tooltip" title="View Messages">
+            <!-- <a class="nav-link @(currentController == "Messages" ? "active" : "")" asp-controller="Messages" asp-action="Index" data-bs-toggle="tooltip" title="View Messages">
                 <i class="bi bi-chat-dots me-2"></i> Messages
-            </a>
-            <a class="nav-link @(currentController == "TaskItems" ? "active" : "")" asp-controller="TaskItems" asp-action="Index" data-bs-toggle="tooltip" title="Manage Tasks">
+            </a> -->
+            <a class="nav-link @(currentController == "TaskItems" ? "active" : "")" asp-controller="TaskItems" asp-action="GlobalTasks" data-bs-toggle="tooltip" title="Manage Tasks">
                 <i class="bi bi-list-task me-2"></i> Tasks
             </a>
             <a class="nav-link @(currentController == "Groups" ? "active" : "")" asp-controller="Groups" asp-action="Index" data-bs-toggle="tooltip" title="View Groups">
@@ -84,9 +84,9 @@
                 <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Groups" ? "active" : "")" style="border: none;" asp-controller="Groups" asp-action="Index">
                     <i class="bi bi-grid me-1"></i> Groups
                 </a>
-                <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Report" ? "active" : "")" style="border: none;" asp-controller="Report" asp-action="Index">
+                <!-- <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Report" ? "active" : "")" style="border: none;" asp-controller="Report" asp-action="Index">
                     <i class="bi bi-bar-chart me-1"></i> Reports
-                </a>
+                </a> -->
             </div>
 
             <form class="d-flex" role="search" style="max-width: 300px;">

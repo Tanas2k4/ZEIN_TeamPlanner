@@ -105,7 +105,7 @@ namespace ZEIN_TeamPlanner.Controllers
 
             if (!tasks.Any() && string.IsNullOrEmpty(search) && string.IsNullOrEmpty(status) && string.IsNullOrEmpty(assignedTo))
             {
-                ViewBag.Message = "Bạn chưa có nhiệm vụ nào. Hãy tham gia hoặc tạo một nhóm để bắt đầu.";
+                ViewBag.Message = "No tasks found, join a group to get started";
             }
 
             ViewBag.Search = search;
@@ -209,7 +209,7 @@ namespace ZEIN_TeamPlanner.Controllers
                         .FirstOrDefaultAsync(t => t.TaskItemId == task.TaskItemId);
                     await _notificationService.CreateNotificationAsync(
                         dto.AssignedToUserId,
-                        $"Bạn được giao nhiệm vụ '{loadedTask.Title}' trong nhóm '{loadedTask.Group.GroupName}'.",
+                        $"You have been assigned '{loadedTask.Title}' in '{loadedTask.Group.GroupName}'.",
                         "TaskAssigned",
                         task.TaskItemId.ToString(),
                         "TaskItem"
@@ -321,7 +321,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 {
                     await _notificationService.CreateNotificationAsync(
                         dto.AssignedToUserId,
-                        $"Bạn được giao nhiệm vụ '{taskAfterUpdate.Title}' trong nhóm '{taskAfterUpdate.Group.GroupName}'.",
+                        $"You have been assigned '{taskAfterUpdate.Title}' in '{taskAfterUpdate.Group.GroupName}'.",
                         "TaskAssigned",
                         dto.TaskItemId.ToString(),
                         "TaskItem"
@@ -341,7 +341,7 @@ namespace ZEIN_TeamPlanner.Controllers
                     {
                         await _notificationService.CreateNotificationAsync(
                             adminId,
-                            $"Thành viên đã cập nhật trạng thái nhiệm vụ '{taskAfterUpdate.Title}' thành '{dto.Status}' trong nhóm '{taskAfterUpdate.Group.GroupName}'.",
+                            $"a member has updated '{taskAfterUpdate.Title}' into '{dto.Status}' in '{taskAfterUpdate.Group.GroupName}'.",
                             "TaskStatusUpdated",
                             dto.TaskItemId.ToString(),
                             "TaskItem"
@@ -440,7 +440,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 {
                     await _notificationService.CreateNotificationAsync(
                         task.AssignedToUserId,
-                        $"Quản trị viên đã cập nhật trạng thái nhiệm vụ '{task.Title}' thành '{status}' trong nhóm '{task.Group.GroupName}'.",
+                        $"An Admin has updated '{task.Title}' into '{status}' in '{task.Group.GroupName}'.",
                         "TaskStatusUpdated",
                         taskId.ToString(),
                         "TaskItem"
@@ -457,7 +457,7 @@ namespace ZEIN_TeamPlanner.Controllers
                     {
                         await _notificationService.CreateNotificationAsync(
                             adminId,
-                            $"Thành viên đã cập nhật trạng thái nhiệm vụ '{task.Title}' thành '{status}' trong nhóm '{task.Group.GroupName}'.",
+                            $"A member has updated '{task.Title}' into '{status}' in '{task.Group.GroupName}'.",
                             "TaskStatusUpdated",
                             taskId.ToString(),
                             "TaskItem"
@@ -494,7 +494,7 @@ namespace ZEIN_TeamPlanner.Controllers
 
             if (isMember && !isWithinDeadline)
             {
-                TempData["Error"] = "Không được tải tệp sau thời hạn.";
+                TempData["Error"] = "you can't upload files after deadline.";
                 return RedirectToAction(nameof(Details), new { id = taskId });
             }
 
@@ -522,7 +522,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 _context.FileAttachments.Add(attachment);
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = "Tệp đã được tải lên thành công.";
+                TempData["Success"] = "File uploaded successfully.";
             }
 
             return RedirectToAction(nameof(Details), new { id = taskId });
@@ -560,7 +560,7 @@ namespace ZEIN_TeamPlanner.Controllers
             _context.FileAttachments.Remove(attachment);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = "Tệp đã được xóa thành công.";
+            TempData["Success"] = "File has been deleted.";
             return RedirectToAction(nameof(Details), new { id = taskId });
         }
     }

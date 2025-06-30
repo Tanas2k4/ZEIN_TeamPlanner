@@ -135,7 +135,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 var group = await _groupService.CreateGroupAsync(dto, userId);
                 await _notificationService.CreateNotificationAsync(
                     userId,
-                    $"Bạn đã tạo nhóm '{group.GroupName}' thành công.",
+                    $"You have created '{group.GroupName}' successfully.",
                     "GroupCreated",
                     group.GroupId.ToString(),
                     "Group"

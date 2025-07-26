@@ -9,7 +9,7 @@ using ZEIN_TeamPlanner.Services;
 
 namespace ZEIN_TeamPlanner.Controllers
 {
-    [Authorize]
+    [Authorize] // Restricts access to authenticated users only
     public class GroupsController : Controller
     {
         private readonly IGroupService _groupService;
@@ -29,6 +29,7 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Index(string nameSearch, string dateSearch, string roleSearch)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Query groups where the user is either a member (not left) or the creator
             var query = _context.Groups
                 .Include(g => g.Members)
                 .Where(g => g.Members.Any(m => m.UserId == userId && m.LeftAt == null) || g.CreatedByUserId == userId);
@@ -43,6 +44,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 query = query.Where(g => g.CreateAt.Date == date.Date);
             }
 
+            // Filter by role (Admin or Member) for the current user
             if (!string.IsNullOrWhiteSpace(roleSearch))
             {
                 if (roleSearch == "Admin")
@@ -66,6 +68,7 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Search(string nameSearch, string dateSearch, string roleSearch)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Similar filtering logic as Index, but returns JSON for async search
             var query = _context.Groups
                 .Include(g => g.Members)
                 .Where(g => g.Members.Any(m => m.UserId == userId && m.LeftAt == null) || g.CreatedByUserId == userId);
@@ -92,13 +95,16 @@ namespace ZEIN_TeamPlanner.Controllers
                 }
             }
 
+            // Project query to a lightweight anonymous object for JSON response
             var groups = await query.Select(g => new
             {
                 g.GroupId,
                 g.GroupName,
+                // Truncate description to 50 chars if too long
                 Description = g.Description != null && g.Description.Length > 50 ? g.Description.Substring(0, 50) + "..." : (g.Description ?? "Không có mô tả"),
                 MemberCount = g.Members.Count(m => m.LeftAt == null),
                 CreateAt = g.CreateAt.ToString("dd MMM yyyy"),
+                // Determine user's role in the group, default to "N/A" if not a member
                 Role = g.Members.FirstOrDefault(m => m.UserId == userId && m.LeftAt == null) != null ? g.Members.FirstOrDefault(m => m.UserId == userId && m.LeftAt == null).Role.ToString() : "N/A",
                 IsAdmin = g.Members.Any(m => m.UserId == userId && m.Role == GroupRole.Admin && m.LeftAt == null)
             }).ToListAsync();
@@ -109,6 +115,7 @@ namespace ZEIN_TeamPlanner.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
+            // Load all users for the group creation form (e.g., to select members)
             var users = await _userManager.Users
                 .Select(u => new { u.Id, u.FullName })
                 .ToListAsync();
@@ -132,7 +139,9 @@ namespace ZEIN_TeamPlanner.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                // Delegate group creation to the service layer
                 var group = await _groupService.CreateGroupAsync(dto, userId);
+                // Notify the creator about successful group creation
                 await _notificationService.CreateNotificationAsync(
                     userId,
                     $"You have created '{group.GroupName}' successfully.",
@@ -157,9 +166,11 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Details(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Check if the user has access to the group
             if (!await _groupService.CanAccessGroupAsync(id, userId))
                 return Forbid();
 
+            // Load group details with members and creator
             var group = await _context.Groups
                 .Include(g => g.Members).ThenInclude(m => m.User)
                 .Include(g => g.CreatedByUser)
@@ -183,9 +194,11 @@ namespace ZEIN_TeamPlanner.Controllers
                 return NotFound();
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Ensure only admins can edit the group
             if (!await _groupService.IsUserAdminAsync(id, userId))
                 return Forbid();
 
+            // Map group data to DTO for editing
             var dto = new EditGroupDto
             {
                 GroupId = group.GroupId,
@@ -220,6 +233,7 @@ namespace ZEIN_TeamPlanner.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                // Update group via service layer
                 var group = await _groupService.UpdateGroupAsync(dto, userId);
                 return RedirectToAction("Details", new { id = group.GroupId });
             }
@@ -247,6 +261,7 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> InviteMember(int groupId, string email)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Only admins can invite members
             if (!await _groupService.IsUserAdminAsync(groupId, userId))
                 return Forbid();
 
@@ -261,6 +276,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 return RedirectToAction(nameof(Details), new { id = groupId });
             }
 
+            // Remove any previous membership if the user left before
             var oldMember = await _context.GroupMembers
                 .FirstOrDefaultAsync(gm => gm.GroupId == groupId && gm.UserId == invitedUser.Id && gm.LeftAt != null);
             if (oldMember != null)
@@ -269,6 +285,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            // Check if the user is already an active member
             var existingMember = await _context.GroupMembers
                 .FirstOrDefaultAsync(gm => gm.GroupId == groupId && gm.UserId == invitedUser.Id && gm.LeftAt == null);
             if (existingMember != null)
@@ -277,6 +294,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 return RedirectToAction(nameof(Details), new { id = groupId });
             }
 
+            // Add new member to the group
             var groupMember = new GroupMember
             {
                 GroupId = groupId,
@@ -288,6 +306,7 @@ namespace ZEIN_TeamPlanner.Controllers
             _context.GroupMembers.Add(groupMember);
             await _context.SaveChangesAsync();
 
+            // Notify the invited user
             await _notificationService.CreateNotificationAsync(
                 invitedUser.Id,
                 $"You have joined '{group.GroupName}'.",
@@ -311,6 +330,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 if (group == null)
                     throw new KeyNotFoundException();
 
+                // Delegate member removal to service layer
                 await _groupService.RemoveMemberAsync(groupId, memberId, userId);
                 await _notificationService.CreateNotificationAsync(
                     memberId,
@@ -336,6 +356,7 @@ namespace ZEIN_TeamPlanner.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Only admins can delete groups
             if (!await _groupService.IsUserAdminAsync(id, userId))
                 return Forbid();
 
@@ -360,6 +381,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 if (group == null)
                     throw new KeyNotFoundException();
 
+                // Delegate group deletion to service layer
                 await _groupService.DeleteGroupAsync(id, userId);
                 await _notificationService.CreateNotificationAsync(
                     userId,
@@ -395,7 +417,9 @@ namespace ZEIN_TeamPlanner.Controllers
                 if (group == null)
                     throw new KeyNotFoundException();
 
+                // Delegate leaving group to service layer
                 await _groupService.LeaveGroupAsync(groupId, userId);
+                // Notify all admins and the creator about the member leaving
                 var admins = group.Members
                     .Where(m => m.Role == GroupRole.Admin && m.LeftAt == null)
                     .Select(m => m.UserId)
@@ -426,8 +450,6 @@ namespace ZEIN_TeamPlanner.Controllers
             }
         }
 
-
-        //Hàm lấy dữ liệu cho biểu đồ nhiệm vụ nhóm
         [HttpGet]
         public async Task<IActionResult> GetTasks(int groupId)
         {
@@ -441,12 +463,14 @@ namespace ZEIN_TeamPlanner.Controllers
                 return NotFound(new { error = "Group not found." });
             }
 
+            // Verify user is an active member
             var isMember = group.Members.Any(m => m.UserId == userId && m.LeftAt == null);
             if (!isMember)
             {
                 return Forbid();
             }
 
+            // Fetch tasks for the group
             var tasks = await _context.TaskItems
                 .Where(t => t.GroupId == groupId)
                 .Select(t => new
@@ -456,6 +480,7 @@ namespace ZEIN_TeamPlanner.Controllers
                 })
                 .ToListAsync();
 
+            // Aggregate task counts by status for charting
             var statusCounts = tasks
                 .GroupBy(t => t.Status)
                 .Select(g => new

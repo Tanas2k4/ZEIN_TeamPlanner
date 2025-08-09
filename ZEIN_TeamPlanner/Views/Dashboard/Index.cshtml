@@ -111,7 +111,7 @@
         new Chart(ctxLine, {
             type: 'line',
             data: {
-                labels: @Html.Raw(Json.Serialize(Model.ProjectProgressDates)),
+                labels: @Html.Raw(Json.Serialize(Model.ProjectProgressDates.Select(d => d.ToString("dd/MM")))),
                 datasets: [{
                     label: 'ToDo',
                     data: @Html.Raw(Json.Serialize(Model.ToDoProjects)),
@@ -135,8 +135,8 @@
             options: {
                 responsive: true,
                 scales: {
-                    x: { title: { display: true, text: 'Date' } },
-                    y: { beginAtZero: true, title: { display: true, text: 'Number of Tasks' } }
+                    x: { title: { display: true, text: 'Date' }, ticks: { maxTicksLimit: 5 } },
+                    y: { beginAtZero: true, title: { display: true, text: 'Number of Tasks' }, ticks: { maxTicksLimit: 5 } }
                 }
             }
         });
@@ -155,6 +155,26 @@
                         @Html.Raw(Json.Serialize(Model.AchievedProjects.Sum()))
                     ],
                     backgroundColor: ['#ff6384', '#36a2eb', '#ffcd56', '#32cd32'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw + ' tasks';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}
                     borderWidth: 2,
                     borderColor: '#fff'
                 }]

@@ -11,9 +11,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Set character encoding and page title -->
     <meta charset="utf-8" />
     <title>@ViewData["Title"] - ZEIN TeamPlanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Favicon and CSS dependencies -->
     <link rel="icon" type="image/x-icon" href="~/zeinIcon.ico" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
@@ -26,7 +28,10 @@
 <body>
     <!-- Sidebar -->
     <div class="sidebar p-3 animate__animated animate__fadeInLeft">
-        <h4 class="mb-4 text-gradient">ZEIN Planner</h4>
+        <!-- Logo with link to Dashboard -->
+        <h4 class="mb-4 text-gradient">
+            <a asp-controller="Dashboard" asp-action="Index" class="text-decoration-none">ZEIN Planner</a>
+        </h4>
         <div class="mb-4 user-profile animate__animated animate__pulse animate__delay-1s">
             <div class="d-flex align-items-center">
                 @if (SignInManager.IsSignedIn(User))
@@ -34,6 +39,7 @@
                     var user = await UserManager.GetUserAsync(User);
                     if (user != null)
                     {
+                        <!-- Display user avatar and details if signed in -->
                         <img src="@user.AvatarUrl" alt="User Avatar" class="avatar" />
                         <div>
                             <p style="text-align: center"><strong>@user.FullName</strong></p>
@@ -43,6 +49,7 @@
                 }
                 else
                 {
+                    <!-- Display guest avatar and login/register links if not signed in -->
                     <img src="/images/default-avatar.png" alt="Default Avatar" class="avatar" />
                     <div>
                         <p><strong>Guest</strong></p>
@@ -54,14 +61,15 @@
                 }
             </div>
         </div>
+        <!-- Navigation menu -->
         <nav class="nav flex-column">
             <a class="nav-link @(currentController == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index" data-bs-toggle="tooltip" title="Go to Dashboard">
                 <i class="bi bi-grid me-2"></i> Dashboard
             </a>
-            <a class="nav-link @(currentController == "Messages" ? "active" : "")" asp-controller="Messages" asp-action="Index" data-bs-toggle="tooltip" title="View Messages">
+            <!-- <a class="nav-link @(currentController == "Messages" ? "active" : "")" asp-controller="Messages" asp-action="Index" data-bs-toggle="tooltip" title="View Messages">
                 <i class="bi bi-chat-dots me-2"></i> Messages
-            </a>
-            <a class="nav-link @(currentController == "TaskItems" ? "active" : "")" asp-controller="TaskItems" asp-action="Index" data-bs-toggle="tooltip" title="Manage Tasks">
+            </a> -->
+            <a class="nav-link @(currentController == "TaskItems" ? "active" : "")" asp-controller="TaskItems" asp-action="GlobalTasks" data-bs-toggle="tooltip" title="Manage Tasks">
                 <i class="bi bi-list-task me-2"></i> Tasks
             </a>
             <a class="nav-link @(currentController == "Groups" ? "active" : "")" asp-controller="Groups" asp-action="Index" data-bs-toggle="tooltip" title="View Groups">
@@ -84,15 +92,17 @@
                 <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Groups" ? "active" : "")" style="border: none;" asp-controller="Groups" asp-action="Index">
                     <i class="bi bi-grid me-1"></i> Groups
                 </a>
-                <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Report" ? "active" : "")" style="border: none;" asp-controller="Report" asp-action="Index">
+                <!-- <a class="btn btn-outline-dark d-flex align-items-center @(currentController == "Report" ? "active" : "")" style="border: none;" asp-controller="Report" asp-action="Index">
                     <i class="bi bi-bar-chart me-1"></i> Reports
-                </a>
+                </a> -->
             </div>
 
+            <!-- Search bar -->
             <form class="d-flex" role="search" style="max-width: 300px;">
                 <input class="form-control me-2 search-input animate__animated animate__fadeInRight" style="border: 2px solid #ddd; transition: all 0.3s ease;" type="search" placeholder="Search for anything..." aria-label="Search" />
             </form>
 
+            <!-- Icon group for topbar actions -->
             <div class="icon-group d-flex align-items-center gap-3">
                 <a asp-controller="CalendarEvents" asp-action="GlobalCalendar" class="custom-icon-btn" data-bs-toggle="tooltip" title="Calendar"><i class="bi bi-calendar2-week"></i></a>
                 <a href="#" class="custom-icon-btn" data-bs-toggle="tooltip" title="Help"><i class="bi bi-question-circle-fill"></i></a>
@@ -115,6 +125,7 @@
                         </div>
                     </div>
                 </div>
+                <!-- Add Group button -->
                 <a class="btn text-white animate__animated animate__pulse animate__infinite" style="background-color: #00AE72;" asp-controller="Groups" asp-action="Create">
                     <i class="bi bi-plus-lg"></i> Add Group
                 </a>
@@ -127,6 +138,7 @@
         </main>
     </div>
 
+    <!-- JavaScript dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.0/signalr.min.js"></script>
@@ -136,23 +148,27 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         $(document).ready(function () {
+            // Check if SignalR is loaded
             if (typeof signalR === "undefined") {
                 console.error("SignalR is not loaded. Notifications will not work.");
                 $("#notificationList").append('<div class="p-2 text-danger text-center">SignalR not available</div>');
                 return;
             }
 
+            // Initialize SignalR connection for notifications
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl("/notificationHub")
                 .withAutomaticReconnect()
                 .build();
 
+            // Handle incoming notifications
             connection.on("ReceiveNotification", function (notification) {
                 console.log("Received notification:", notification);
                 addNotification(notification);
                 updateBadge();
             });
 
+            // Start SignalR connection
             connection.start().catch(function (err) {
                 console.error("SignalR Connection Error:", err);
             });
@@ -160,15 +176,18 @@
             // Load notifications on page load
             loadNotifications();
 
+            // Mark all notifications as read on click
             $("#markAllRead").click(function (e) {
                 e.preventDefault();
                 markAllAsRead();
             });
 
+            // Load notifications when dropdown is shown
             $("#notificationDropdown").on("shown.bs.dropdown", function () {
                 loadNotifications();
             });
 
+            // Function to load notifications via AJAX
             function loadNotifications() {
                 $.ajax({
                     url: "/Notifications/GetNotifications",
@@ -193,6 +212,7 @@
                 });
             }
 
+            // Function to add a notification to the dropdown
             function addNotification(notification) {
                 const isReadClass = notification.isRead ? "" : "list-group-item-primary";
                 let url = "#";
@@ -226,6 +246,7 @@
                 });
             }
 
+            // Function to mark a single notification as read
             function markNotificationAsRead(notificationId) {
                 $.ajax({
                     url: "/Notifications/MarkAsRead",
@@ -243,6 +264,7 @@
                 });
             }
 
+            // Function to update the notification badge
             function updateBadge() {
                 const unreadCount = $("#notificationList .list-group-item-primary").length;
                 const badge = $("#notificationBadge");
@@ -253,6 +275,7 @@
                 }
             }
 
+            // Function to mark all notifications as read
             function markAllAsRead() {
                 const notificationIds = $("#notificationList .list-group-item-primary").map(function () {
                     const id = $(this).data("notification-id");
